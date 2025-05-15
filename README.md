@@ -1,2 +1,2 @@
 # hikarin-framework
-A Platform Agnostic Visual Novel Scripting Framework
+A Platform Agnostic Visual Storytelling Scripting Framework
