@@ -6,12 +6,12 @@ import importlib.util
 import traceback
 from pathlib import Path
 from typing import List, Dict, Any
-
+from dataclasses import asdict
 from fastapi import APIRouter, HTTPException, Body
 from fastapi.responses import FileResponse
 
 # Import Models
-from src.model import ProjectManifest
+from src.model import ProjectManifest, ScriptGroup
 
 # Import the Compiler Logic (The Processor)
 # Assuming src/compiler.py has the process_fsm function we discussed
@@ -69,23 +69,28 @@ def create_project(manifest: ProjectManifest):
     (folder / "assets").mkdir()
     (folder / "generated").mkdir()
     
-    # 2. Create Manifest
+        # 2. Create Manifest
     manifest_path = folder / "manifest.json"
     with open(manifest_path, "w") as f:
-        # Convert dataclass to dict
-        json.dump(manifest.__dict__, f, indent=4)
+        # Convert dataclass to dict (handles nested ScriptGroups automatically)
+        json.dump(asdict(manifest), f, indent=4) # Use asdict import from dataclasses
     
-    # 3. Create Initial Script (using the first item in build_order or default)
-    first_script = manifest.build_order[0] if manifest.build_order else "main.py"
+    # 3. Create Initial Script
+
+    # NEW (Fixed): Get the first file from the first group
+    if manifest.script_groups and manifest.script_groups[0].source_files:
+        first_script = manifest.script_groups[0].source_files[0]
+    else:
+        first_script = "main.py"
+        
     script_path = folder / first_script
-    
     initial_code = (
         "from src.modules import VisualNovelModule\n"
         "from src.model import Character\n\n"
         "vn = VisualNovelModule()\n\n"
         "def story():\n"
         "    vn.label('start')\n"
-        "    vn.say(None, 'Hello World!')\n"
+        "    vn.say('', 'Hello World!')\n"
         "    vn.finish()\n"
         "    return vn.dialogueDict\n"
     )
@@ -149,14 +154,6 @@ def write_file(slug: str, filename: str, content: str = Body(..., embed=True)):
 
 @router.post("/{slug}/compile")
 def compile_project(slug: str):
-    """
-    The Big Logic:
-    1. Reads manifest for 'build_order'.
-    2. Loads each script dynamically.
-    3. Runs script.story().
-    4. Merges results.
-    5. Compiles to FSM JSON.
-    """
     project_path = PROJECTS_DIR / slug
     if not project_path.exists(): raise HTTPException(404, "Project not found")
     
@@ -164,78 +161,129 @@ def compile_project(slug: str):
     output_dir = project_path / "generated"
     output_dir.mkdir(exist_ok=True)
 
-    # 1. Determine Build Order
-    build_order = ["main.py"] # Default
+    # 1. Load Manifest
+    # We default to a basic Main Group if manifest is missing/broken
+    manifest_data = None
+    script_groups = [ScriptGroup(slug="behavior", name="Main", source_files=["main.py"])]
+    
     if manifest_path.exists():
         try:
             with open(manifest_path) as f:
                 data = json.load(f)
-                build_order = data.get("build_order", ["main.py"])
-        except:
-            print("Manifest Error, defaulting to main.py")
+                # Convert raw dicts back into ScriptGroup objects
+                if "script_groups" in data:
+                    script_groups = [ScriptGroup(**g) for g in data["script_groups"]]
+        except Exception as e:
+            print(f"Manifest Error: {e}")
 
-    master_dialogue_list = []
+    # Ensure SDK is in path
+    if str(Path.cwd()) not in sys.path:
+        sys.path.append(str(Path.cwd()))
+
+    compilation_report = {}
     logs = []
 
-    try:
-        # Ensure we can import 'src' modules
-        # This adds the root SDK folder to Python path
-        if str(Path.cwd()) not in sys.path:
-            sys.path.append(str(Path.cwd()))
-
-        # 2. Orchestrate Scripts
-        for filename in build_order:
+    # ==================================================
+    # 2. LOOP THROUGH EACH SCRIPT GROUP
+    # ==================================================
+    for group in script_groups:
+        logs.append(f"--- Compiling Group: {group.name} ({group.slug}.json) ---")
+        
+        group_dialogue_list = []
+        
+        # 3. Merge all Python Files in this Group
+        for filename in group.source_files:
             file_path = project_path / filename
             
             if not file_path.exists():
-                logs.append(f"Skipping {filename}: File not found")
+                logs.append(f"  [Skip] {filename} not found")
                 continue
 
-            logs.append(f"Compiling {filename}...")
-
-            # --- DYNAMIC IMPORT MAGIC ---
-            # We use a unique name based on slug + filename to prevent caching overlap
-            module_name = f"proj_{slug}_{filename.replace('.', '_')}"
-            
+            # Dynamic Import
+            # Unique namespace: proj_{slug}_{group}_{file}
+            module_name = f"proj_{slug}_{group.slug}_{filename.replace('.', '_')}"
             spec = importlib.util.spec_from_file_location(module_name, file_path)
+            
             if spec and spec.loader:
-                user_module = importlib.util.module_from_spec(spec)
-                sys.modules[module_name] = user_module # Cache it (optional, but good for dependencies)
-                spec.loader.exec_module(user_module)
-                
-                # 3. Run story()
-                if hasattr(user_module, "story"):
-                    result = user_module.story()
-                    if isinstance(result, list):
-                        master_dialogue_list.extend(result)
-                        logs.append(f" -> Added {len(result)} actions from {filename}")
+                try:
+                    user_module = importlib.util.module_from_spec(spec)
+                    sys.modules[module_name] = user_module
+                    spec.loader.exec_module(user_module)
+                    
+                    if hasattr(user_module, "story"):
+                        result = user_module.story()
+                        if isinstance(result, list):
+                            group_dialogue_list.extend(result)
+                            logs.append(f"  [OK] {filename}: Added {len(result)} states")
+                        else:
+                            logs.append(f"  [ERR] {filename}: story() did not return list")
                     else:
-                        logs.append(f" -> Error: {filename} story() did not return a list")
-                else:
-                    logs.append(f" -> Warning: No story() function in {filename}")
+                        logs.append(f"  [WARN] {filename}: No story() function")
+                except Exception as e:
+                     logs.append(f"  [CRIT] {filename} Failed: {str(e)}")
 
-        # 4. Process FSM (Flatten & Sanitize)
-        # This calls your core/compiler.py logic
-        final_fsm = process_fsm(master_dialogue_list)
+        # 4. Compile the Group to JSON
+        try:
+            if group_dialogue_list:
+                # The Processor
+                final_fsm = process_fsm(group_dialogue_list)
+                
+                # Save as {group.slug}.json
+                output_file = output_dir / f"{group.slug}.json"
+                with open(output_file, "w") as f:
+                    json.dump(final_fsm, f, indent=4)
+                
+                compilation_report[group.slug] = {
+                    "status": "success",
+                    "states": len(final_fsm),
+                    "file": f"{group.slug}.json"
+                }
+            else:
+                compilation_report[group.slug] = {"status": "empty", "reason": "No dialogue found"}
+                
+        except Exception as e:
+            compilation_report[group.slug] = {"status": "failed", "error": str(e)}
 
-        # 5. Save Result
-        output_file = output_dir / "behavior.json"
-        with open(output_file, "w") as f:
-            json.dump(final_fsm, f, indent=4)
+    return {
+        "message": "Project Compiled",
+        "report": compilation_report,
+        "logs": logs
+    }
 
-        return {
-            "status": "success",
-            "message": "Compilation Complete",
-            "state_count": len(final_fsm),
-            "output_path": str(output_file),
-            "logs": logs
-        }
+@router.get("/{slug}/export")
+def export_project(slug: str):
+    """
+    Triggers the Minecraft Resource Pack generation.
+    Returns the ZIP file as a download.
+    """
+    project_path = PROJECTS_DIR / slug
+    manifest_path = project_path / "manifest.json"
+    
+    if not project_path.exists():
+        raise HTTPException(404, "Project not found")
+        
+    # Load Manifest
+    if manifest_path.exists():
+        with open(manifest_path) as f:
+            data = json.load(f)
+            manifest = ProjectManifest(**data)
+    else:
+        # Fallback if manifest is missing
+        manifest = ProjectManifest(slug=slug, name=slug)
 
+    try:
+        # CALL THE BUILDER
+        zip_path_str = export_resource_pack(slug, manifest)
+        zip_path = Path(zip_path_str)
+        
+        # Return file for download
+        return FileResponse(
+            path=zip_path, 
+            filename=zip_path.name, 
+            media_type='application/zip'
+        )
+        
     except Exception as e:
-        # Return detailed error trace so the UI can show the user what they broke
-        return {
-            "status": "error",
-            "message": str(e),
-            "trace": traceback.format_exc(),
-            "logs": logs
-        }
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(500, f"Export failed: {str(e)}")

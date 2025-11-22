@@ -1,115 +1,142 @@
-# =======================================
-
-# This is where you define the resource pack name, description, and  trigger words
-# No need to scroll down
-# Just press play, top right corner of the screen
-# And it will create the resource pack zip for you
-
-# Have fun then!
-
-RESOURCE_PACK_NAME = "Andr's Demo"
-RESOURCE_PACK_DESCRIPTION = "Yes"
-TRIGGER_WORDS = "Trigger is Cupa"
-VERSION = 18 # The Pack version, 1.20.1 is 18, 1.21 is 19.
-
-# =======================================
-
-# Oh you want to know how it works???
-# ...
-# Yeah, good luck with that
-
-
-import json
 import os
 import shutil
+import json
+from pathlib import Path
+from typing import Optional
 
-ASSETS_DIR = "mediafile" 
-PACK_IMAGE = ASSETS_DIR+"/images/pack.png"
-IMAGE_DIR =  ASSETS_DIR + "/images" 
-SOUNDS_DIR = ASSETS_DIR + "/sounds"
-SCRIPT_DIR = ASSETS_DIR + "/scripts" 
+# Import models to know what we are exporting
+from src.model import ProjectManifest
 
-def create_resource_pack():
+def export_resource_pack(slug: str, manifest: ProjectManifest) -> str:
     """
-    Creates a Minecraft resource pack with the specified parameters.
-    Copies all contents from IMAGE_DIR and SOUNDS_DIR including subdirectories.
-    
-    Args:
-        description (str): Resource pack description
-        trigger_word (str): Trigger word for the pack
-        resource_pack_name (str): Name of the output resource pack
-    
-    Returns:
-        str: Path to the created zip file
+    Builds the Minecraft Resource Pack.
+    Returns the absolute path to the generated .zip file.
     """
-    output = RESOURCE_PACK_NAME + ".zip"
     
-    # Create pack.mcmeta content
-    pack_meta_content = {
-        "pack": {
-            "description": RESOURCE_PACK_DESCRIPTION + "\nTrigger Word: " + TRIGGER_WORDS,
-            "pack_format": VERSION
-        }
-    }
+    # 1. CONFIGURATION & PATHS
+    # ------------------------
+    ROOT_DIR = Path.cwd()
+    PROJECT_DIR = ROOT_DIR / "projects" / slug
+    LIBRARY_DIR = ROOT_DIR / "library"
     
-    # Create a temporary directory for building the zip
-    temp_dir = "temp_build_dir"
-    if os.path.exists(temp_dir):
-        shutil.rmtree(temp_dir)
-    os.makedirs(temp_dir)
+    # Output location (we'll save the zip inside the project folder for now)
+    OUTPUT_DIR = PROJECT_DIR / "exports"
+    OUTPUT_DIR.mkdir(exist_ok=True)
     
+    ZIP_NAME = f"{slug}_v{manifest.version}"
+    ZIP_PATH = OUTPUT_DIR / ZIP_NAME # shutil.make_archive adds .zip automatically
+    
+    # Temp Build Directory
+    BUILD_DIR = OUTPUT_DIR / "temp_build"
+    if BUILD_DIR.exists():
+        shutil.rmtree(BUILD_DIR)
+    BUILD_DIR.mkdir()
+
+    # Minecraft Structure
+    ASSETS_ROOT = BUILD_DIR / "assets" / "mobtalkerredux"
+    TEXTURES_DIR = ASSETS_ROOT / "textures"
+    SOUNDS_DIR = ASSETS_ROOT / "sounds"
+    CHAR_TEXTURES_DIR = TEXTURES_DIR / "characters"
+    
+    ASSETS_ROOT.mkdir(parents=True)
+    TEXTURES_DIR.mkdir()
+    SOUNDS_DIR.mkdir()
+    CHAR_TEXTURES_DIR.mkdir()
+
     try:
-        # Create the required directory structure
-        assets_path = os.path.join(temp_dir, "assets", "mobtalkerredux")
-        os.makedirs(assets_path)
+        # 2. CREATE METADATA (pack.mcmeta)
+        # --------------------------------
+        # We use a mapping for Minecraft versions -> Pack Format
+        # 1.20.1 = 15, 1.21 = 34 (This changes constantly, so we assume 15+ or let user set it)
+        # For now, default to 15 (1.20.x)
+        pack_format = 15 
         
-        # Copy pack.png
-        if os.path.exists(PACK_IMAGE):
-            shutil.copy2(PACK_IMAGE, os.path.join(temp_dir, "pack.png"))
+        mcmeta = {
+            "pack": {
+                "description": f"{manifest.name} - {manifest.description}",
+                "pack_format": pack_format
+            }
+        }
         
-        # Create and write pack.mcmeta
-        with open(os.path.join(temp_dir, "pack.mcmeta"), 'w', encoding='utf-8') as f:
-            json.dump(pack_meta_content, f, indent=4)
+        with open(BUILD_DIR / "pack.mcmeta", "w") as f:
+            json.dump(mcmeta, f, indent=4)
+
+        # 3. COPY PACK ICON
+        # -----------------
+        # Priority: Project pack.png > Library pack.png > None
+        proj_icon = PROJECT_DIR / "pack.png"
+        lib_icon = LIBRARY_DIR / "pack.png"
         
-        # Copy entire image directory
-        if os.path.exists(IMAGE_DIR):
-            shutil.copytree(
-                IMAGE_DIR, 
-                os.path.join(assets_path, "textures"),
-                dirs_exist_ok=True
-            )
+        if proj_icon.exists():
+            shutil.copy2(proj_icon, BUILD_DIR / "pack.png")
+        elif lib_icon.exists():
+            shutil.copy2(lib_icon, BUILD_DIR / "pack.png")
+
+        # 4. MERGE ASSETS (Library + Project)
+        # -----------------------------------
         
-        # Copy entire sounds directory
-        if os.path.exists(SOUNDS_DIR):
-            shutil.copytree(
-                SOUNDS_DIR, 
-                os.path.join(assets_path, "sounds"),
-                dirs_exist_ok=True
-            )
-        
-        # Copy scripts if they exist
-        if os.path.exists(SCRIPT_DIR):
-            for script_file in os.listdir(SCRIPT_DIR):
-                if script_file.endswith('.json'):
-                    shutil.copy2(
-                        os.path.join(SCRIPT_DIR, script_file),
-                        os.path.join(assets_path, script_file)
-                    )
-        
-        # Create the zip file
-        if os.path.exists(output):
-            os.remove(output)
+        # --- A. GLOBAL IMAGES ---
+        # Copy Library Images -> textures/
+        lib_imgs = LIBRARY_DIR / "images"
+        if lib_imgs.exists():
+            _copy_tree_contents(lib_imgs, TEXTURES_DIR)
             
-        shutil.make_archive(RESOURCE_PACK_NAME, 'zip', temp_dir)
-        
-        return output
-        
+        # Copy Project Images -> textures/ (Overwrites Library)
+        proj_imgs = PROJECT_DIR / "assets" / "images"
+        if proj_imgs.exists():
+            _copy_tree_contents(proj_imgs, TEXTURES_DIR)
+
+        # --- B. GLOBAL AUDIO ---
+        # Copy Library Audio -> sounds/
+        lib_audio = LIBRARY_DIR / "audio"
+        if lib_audio.exists():
+            _copy_tree_contents(lib_audio, SOUNDS_DIR)
+            
+        # Copy Project Audio -> sounds/ (Overwrites Library)
+        proj_audio = PROJECT_DIR / "assets" / "audio"
+        if proj_audio.exists():
+            _copy_tree_contents(proj_audio, SOUNDS_DIR)
+
+        # --- C. CHARACTERS (Special Handling) ---
+        # We need to copy 'library/characters/{id}/*.png' to 'textures/characters/{id}/'
+        # We Ignore data.json
+        lib_chars = LIBRARY_DIR / "characters"
+        if lib_chars.exists():
+            for char_folder in lib_chars.iterdir():
+                if char_folder.is_dir():
+                    target_char_dir = CHAR_TEXTURES_DIR / char_folder.name
+                    target_char_dir.mkdir(exist_ok=True)
+                    
+                    for file in char_folder.iterdir():
+                        if file.suffix.lower() in ['.png', '.jpg']:
+                            shutil.copy2(file, target_char_dir / file.name)
+
+        # 5. COPY GENERATED SCRIPTS (FSM JSON)
+        # ------------------------------------
+        # These go directly into assets/mobtalkerredux/
+        generated_dir = PROJECT_DIR / "generated"
+        if generated_dir.exists():
+            for f in generated_dir.glob("*.json"):
+                shutil.copy2(f, ASSETS_ROOT / f.name)
+
+        # 6. ZIP IT UP
+        # ------------
+        archive_path = shutil.make_archive(str(ZIP_PATH), 'zip', BUILD_DIR)
+        return archive_path
+
     finally:
-        # Clean up temporary directory
-        if os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir)
+        # 7. CLEANUP
+        if BUILD_DIR.exists():
+            shutil.rmtree(BUILD_DIR)
 
-def main():create_resource_pack() # Yeah, just run this file :v
-
-if __name__ == "__main__":
-    main() 
+def _copy_tree_contents(src: Path, dst: Path):
+    """Helper to copy files from src to dst, merging folders."""
+    for item in src.iterdir():
+        if item.is_dir():
+            # If directory, recurse
+            target_subdir = dst / item.name
+            target_subdir.mkdir(exist_ok=True)
+            _copy_tree_contents(item, target_subdir)
+        else:
+            # If file, copy
+            shutil.copy2(item, dst / item.name)

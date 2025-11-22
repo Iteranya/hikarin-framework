@@ -52,9 +52,19 @@ class Character:
 # ==========================================
 
 @dataclass
+class ScriptGroup:
+    """
+    Represents ONE Output JSON (e.g., 'main_story.json').
+    It is composed of MULTIPLE Python source files.
+    """
+    slug: str                  # The output filename (without .json)
+    name: str                  # Display name in UI (e.g. "Main Story Chapter")
+    source_files: List[str]    # The inputs: ["intro.py", "ch1.py", "ch2.py"]
+
+@dataclass
 class ProjectManifest:
     """
-    Defines a Project's configuration.
+    The Project Configuration.
     Saved as 'projects/{slug}/manifest.json'.
     """
     slug: str
@@ -63,8 +73,9 @@ class ProjectManifest:
     version: str = "0.0.1"
     authors: List[str] = field(default_factory=list)
     
-    # The Orchestrator List: Defines execution order of scripts
-    build_order: List[str] = field(default_factory=lambda: ["main.py"])
+    script_groups: List[ScriptGroup] = field(default_factory=lambda: [
+        ScriptGroup(slug="behavior", name="Main Behavior", source_files=["main.py"])
+    ])
 
 # ==========================================
 # ASSET MODEL (For API Responses)
