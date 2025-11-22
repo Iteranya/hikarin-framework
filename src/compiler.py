@@ -131,3 +131,18 @@ def compile_sound(sounds: list[dict]) -> dict:
     for sound_dict in sounds:
         combined_dict.update(sound_dict)
     return combined_dict
+
+def process_fsm(raw_script_data: list[dict]) -> list[dict]:
+    """
+    Takes the raw dialogueDict from the VN Module, 
+    cleans it, flattens it, and validates it.
+    Returns the Pure Data (List of Dicts).
+    """
+    # 1. Flatten
+    flat = flattenVN(raw_script_data)
+    # 2. Sanitize
+    flat = sanitize(flat)
+    # 3. Validate
+    check(flat)
+    
+    return flat
