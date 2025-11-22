@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MobTalker - Library</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        mob: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                        dark: {
+                            700: '#2d2d2d',
+                            800: '#1e1e1e',
+                            900: '#121212',
+                            950: '#0a0a0a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e1e1e; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+        
+        .glass-panel {
+            background: rgba(30, 30, 30, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .asset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .nav-link.active {
+            color: #fff;
+            border-bottom: 2px solid #22c55e;
+        }
+    </style>
+</head>
+<body class="bg-dark-900 text-gray-200 font-sans h-screen flex flex-col overflow-hidden selection:bg-mob-500 selection:text-white">
+
+    <!-- GLOBAL TOP NAVBAR -->
+    <nav class="h-14 bg-dark-950 border-b border-gray-800 flex items-center justify-between px-4 z-30 flex-shrink-0">
+        <!-- Logo Area -->
+        <div class="flex items-center gap-3 w-64">
+            <div class="w-7 h-7 bg-mob-600 rounded flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-mob-900/50">M</div>
+            <span class="font-bold text-lg tracking-tight text-white">MobTalker SDK</span>
+        </div>
+
+        <!-- Main Navigation Links -->
+        <div class="flex items-center h-full gap-8">
+            <a href="/projects" class="nav-link h-full flex items-center px-2 text-sm font-medium text-gray-400 hover:text-white transition border-b-2 border-transparent">
+                <i class="fa-solid fa-code-branch mr-2"></i> Projects
+            </a>
+            <a href="/library" class="nav-link active h-full flex items-center px-2 text-sm font-medium text-white transition border-b-2 border-mob-500 bg-white/5">
+                <i class="fa-solid fa-book-open mr-2"></i> Library
+            </a>
+        </div>
+
+        <!-- User/Settings Placeholder -->
+        <div class="flex items-center gap-4 w-64 justify-end">
+            <button class="text-gray-400 hover:text-white"><i class="fa-solid fa-gear"></i></button>
+            <div class="w-8 h-8 rounded-full bg-gray-700 border border-gray-600"></div>
+        </div>
+    </nav>
+
+    <!-- LAYOUT CONTENT (Sidebar + Main) -->
+    <div class="flex flex-1 overflow-hidden relative">
+        
+        <!-- Internal Sidebar (Scoped to Library) -->
+        <aside class="w-64 bg-dark-800 border-r border-gray-800 flex flex-col z-20">
+            <div class="px-6 py-4">
+                <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Asset Browser</h2>
+            </div>
+
+            <nav class="flex-1 px-4 space-y-1">
+                <button onclick="app.navigate('characters')" id="nav-characters" class="nav-item w-full text-left px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center gap-3 text-gray-400 hover:bg-gray-700 hover:text-mob-500 text-sm">
+                    <i class="fa-solid fa-users w-5"></i> Characters
+                </button>
+                
+                <button onclick="app.navigate('backgrounds')" id="nav-backgrounds" class="nav-item w-full text-left px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center gap-3 text-gray-400 hover:bg-gray-700 hover:text-mob-500 text-sm">
+                    <i class="fa-solid fa-image w-5"></i> Global Images
+                </button>
+                
+                <button onclick="app.navigate('audio')" id="nav-audio" class="nav-item w-full text-left px-4 py-2.5 rounded-lg transition-all duration-200 flex items-center gap-3 text-gray-400 hover:bg-gray-700 hover:text-mob-500 text-sm">
+                    <i class="fa-solid fa-music w-5"></i> Global Audio
+                </button>
+            </nav>
+
+                
+            <div class="p-4 border-t border-gray-800 text-xs text-gray-600 text-center">
+                v1.0.0 &copy; MobTalker
+            </div>
+
+  
+        </aside>
+
+        <!-- Main Viewport -->
+        <main class="flex-1 flex flex-col bg-dark-900 relative overflow-hidden">
+            
+            <!-- Context Header -->
+            <header class="h-16 border-b border-gray-800 flex items-center justify-between px-8 bg-dark-900/95 backdrop-blur z-10 flex-shrink-0">
+                <div>
+                    <p class="text-xs text-gray-500 mb-0.5">Library / <span id="breadcrumb-current" class="text-gray-300">...</span></p>
+                    <h1 id="page-title" class="text-xl font-semibold text-white">Characters</h1>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="app.refreshCurrentView()" class="w-8 h-8 rounded hover:bg-gray-800 text-gray-400 hover:text-white transition flex items-center justify-center"><i class="fa-solid fa-sync"></i></button>
+                    <div id="action-area">
+                        <!-- Dynamic Action Buttons -->
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Content Area -->
+            <div id="content-area" class="flex-1 overflow-y-auto p-8 relative">
+                <!-- Loading State -->
+                <div class="flex items-center justify-center h-full text-gray-500">
+                    <i class="fa-solid fa-spinner fa-spin text-4xl"></i>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 flex flex-col gap-2 pointer-events-none z-[60]"></div>
+
+    <!-- Modal: Character Editor -->
+    <div id="modal-character" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-dark-800 rounded-xl shadow-2xl border border-gray-700 w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-dark-900">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2"><i class="fa-solid fa-user-pen text-mob-500"></i> Character Editor</h2>
+                <button onclick="app.closeModal('modal-character')" class="text-gray-400 hover:text-red-500 transition w-8 h-8 flex items-center justify-center rounded hover:bg-gray-800"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="flex-1 flex overflow-hidden">
+                <!-- Left: Metadata Form -->
+                <div class="w-1/3 border-r border-gray-700 p-6 overflow-y-auto bg-gray-900/30">
+                    <form id="char-form" onsubmit="app.saveCharacter(event)">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">ID (Slug)</label>
+                                <input type="text" name="id" id="char-id" class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm focus:border-mob-500 focus:ring-1 focus:ring-mob-500 outline-none transition placeholder-gray-600" placeholder="e.g. creeper_chan" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Display Name</label>
+                                <input type="text" name="name" id="char-name" class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm focus:border-mob-500 outline-none" placeholder="e.g. Creeper Chan" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Description</label>
+                                <textarea name="description" id="char-desc" rows="3" class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm focus:border-mob-500 outline-none resize-none"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Initial Thoughts</label>
+                                <textarea name="thoughts" id="char-thoughts" rows="2" class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm focus:border-mob-500 outline-none resize-none"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Default Outfit</label>
+                                <input type="text" name="outfit" id="char-outfit" class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm focus:border-mob-500 outline-none" value="default">
+                            </div>
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-gray-700">
+                            <button type="submit" class="w-full bg-mob-600 hover:bg-mob-500 text-white py-2 rounded text-sm font-medium transition shadow-lg shadow-mob-900/50">Save Metadata</button>
+                        </div>
+                    </form>
+                    <div id="char-delete-zone" class="mt-4 hidden">
+                        <button onclick="app.deleteCurrentCharacter()" class="w-full text-red-400 border border-red-900/30 bg-red-900/10 hover:bg-red-900/30 py-2 rounded text-sm transition">Delete Character</button>
+                    </div>
+                </div>
+
+                <!-- Right: Asset Manager -->
+                <div class="w-2/3 p-6 flex flex-col bg-dark-800">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="font-semibold text-gray-300">Character Assets</h3>
+                            <p class="text-xs text-gray-500">Images must be PNG format.</p>
+                        </div>
+                        <label class="cursor-pointer bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-xs transition flex items-center gap-2 border border-gray-600">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Upload Files
+                            <input type="file" id="char-asset-upload" class="hidden" multiple onchange="app.uploadCharacterAssets(this)">
+                        </label>
+                    </div>
+                    
+                    <!-- Asset Grid -->
+                    <div id="char-assets-list" class="asset-grid flex-1 overflow-y-auto pr-2 p-1">
+                        <!-- Assets injected here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Global Upload -->
+    <div id="modal-upload-global" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-dark-800 rounded-xl p-6 w-96 border border-gray-700 shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-1">Upload Asset</h3>
+            <p class="text-xs text-gray-500 mb-4">File will be added to the global library.</p>
+            
+            <div class="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center hover:border-mob-500 transition group cursor-pointer relative">
+                <input type="file" id="global-file-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"/>
+                <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-600 group-hover:text-mob-500 mb-2 transition"></i>
+                <p class="text-sm text-gray-400">Click or drag file here</p>
+            </div>
+
+            <div class="flex justify-end gap-2 mt-4">
+                <button onclick="app.closeModal('modal-upload-global')" class="px-4 py-2 text-gray-400 hover:text-white text-sm rounded hover:bg-gray-700 transition">Cancel</button>
+                <button onclick="app.performGlobalUpload()" class="px-4 py-2 bg-mob-600 text-white rounded hover:bg-mob-500 text-sm font-medium shadow-lg shadow-mob-900/20">Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates -->
+    <template id="tpl-char-card">
+        <div class="glass-panel rounded-xl p-4 hover:bg-gray-800 transition cursor-pointer group relative overflow-hidden flex flex-col" onclick="app.openCharacterEditor('{{id}}')">
+            <div class="aspect-square bg-gray-900/50 rounded-lg mb-3 flex items-center justify-center overflow-hidden relative border border-gray-800">
+                <img src="{{thumb}}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" onerror="this.style.display='none'">
+                <i class="fa-solid fa-user text-4xl text-gray-700 absolute z-0"></i>
+            </div>
+            <h3 class="font-bold text-white truncate">{{name}}</h3>
+            <p class="text-xs text-gray-500 truncate font-mono">{{id}}</p>
+            <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition transform group-hover:translate-y-0 translate-y-2">
+                <span class="bg-black/60 text-white text-[10px] px-2 py-1 rounded backdrop-blur border border-gray-700">Edit</span>
+            </div>
+        </div>
+    </template>
+
+    <template id="tpl-asset-card">
+        <div class="bg-dark-900 rounded border border-gray-800 group relative overflow-hidden hover:border-gray-600 transition">
+            <div class="aspect-square bg-black/20 flex items-center justify-center relative bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxyZWN0IHdpZHRoPSI4IiBoZWlnaHQ9“4IiBmaWxsPSIjMjEyMTIxIi8+PHBhdGggZD0iTTAgMEg0VjRINHoiIGZpbGw9IiMxOTE5MTkiLz48L3N2Zz4=')]">
+                <!-- If Image -->
+                <img src="{{url}}" class="w-full h-full object-contain p-1" loading="lazy">
+                <!-- If Audio -->
+                <i class="fa-solid fa-music text-4xl text-gray-700 hidden asset-icon"></i>
+            </div>
+            <div class="p-2 bg-dark-900 border-t border-gray-800">
+                <p class="text-xs text-gray-300 truncate font-medium" title="{{filename}}">{{filename}}</p>
+                <p class="text-[10px] text-gray-600">{{size}}</p>
+            </div>
+            <div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                 <a href="{{url}}" target="_blank" class="bg-black/60 hover:bg-mob-600 text-white w-6 h-6 flex items-center justify-center rounded backdrop-blur">
+                    <i class="fa-solid fa-expand text-[10px]"></i>
+                </a>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        class LibraryManager {
+            constructor() {
+                this.currentView = 'characters';
+                this.apiBase = '/api';
+                this.editingCharId = null;
+                this.cache = { characters: [], assets: [] };
+                
+                // Initialize
+                this.navigate('characters');
+            }
+
+            // --- Navigation & View Management ---
+
+            navigate(view) {
+                this.currentView = view;
+                
+                // Update Sidebar UI
+                document.querySelectorAll('.nav-item').forEach(el => {
+                    el.classList.remove('bg-gray-700', 'text-mob-500', 'text-white');
+                    el.classList.add('text-gray-400');
+                });
+                const activeBtn = document.getElementById(`nav-${view}`);
+                if(activeBtn) activeBtn.classList.add('bg-gray-700', 'text-mob-500', 'text-white');
+
+                // Update Header
+                const titles = {
+                    'characters': 'Characters',
+                    'backgrounds': 'Global Images',
+                    'audio': 'Global Audio'
+                };
+                document.getElementById('page-title').innerText = titles[view];
+                document.getElementById('breadcrumb-current').innerText = titles[view];
+
+                // Update Action Buttons
+                const actionArea = document.getElementById('action-area');
+                actionArea.innerHTML = '';
+                
+                if(view === 'characters') {
+                    actionArea.innerHTML = `<button onclick="app.openCharacterEditor(null)" class="bg-mob-600 hover:bg-mob-500 text-white px-4 py-1.5 rounded text-sm font-medium shadow-lg shadow-mob-900/20 transition flex items-center gap-2"><i class="fa-solid fa-plus"></i> <span class="hidden sm:inline">New Character</span></button>`;
+                } else {
+                    actionArea.innerHTML = `<button onclick="app.openGlobalUploadModal()" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-1.5 rounded text-sm font-medium transition flex items-center gap-2 border border-gray-600"><i class="fa-solid fa-upload"></i> <span class="hidden sm:inline">Upload</span></button>`;
+                }
+
+                this.refreshCurrentView();
+            }
+
+            refreshCurrentView() {
+                if (this.currentView === 'characters') this.loadCharacters();
+                else if (this.currentView === 'backgrounds') this.loadGlobalAssets('images');
+                else if (this.currentView === 'audio') this.loadGlobalAssets('audio');
+            }
+
+            // --- API Calls ---
+
+            async api(endpoint, method = 'GET', body = null, isFormData = false) {
+                const options = { method };
+                if (body) {
+                    if (isFormData) {
+                        options.body = body;
+                    } else {
+                        options.headers = { 'Content-Type': 'application/json' };
+                        options.body = JSON.stringify(body);
+                    }
+                }
+
+                try {
+                    // Mocking fetch for demonstration if server isn't present
+                    const res = await fetch(this.apiBase + endpoint, options);
+                    if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
+                    return await res.json();
+                } catch (err) {
+                    console.error(err);
+                    // Fallback for demo if API fails
+                    if(this.apiBase === '/api') { 
+                        console.warn("API unreachable, returning mock data for UI check.");
+                        return null; 
+                    }
+                    this.toast(err.message, 'error');
+                    return null;
+                }
+            }
+
+            // --- Characters Logic ---
+
+            async loadCharacters() {
+                const container = document.getElementById('content-area');
+                container.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500"><i class="fa-solid fa-circle-notch fa-spin text-2xl"></i></div>';
+                
+                const chars = await this.api('/library/characters');
+                this.cache.characters = chars || [];
+
+                if (!chars || chars.length === 0) {
+                    container.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full text-gray-500">
+                            <div class="w-16 h-16 bg-dark-800 rounded-full flex items-center justify-center mb-4 border border-gray-700">
+                                <i class="fa-solid fa-users-slash text-2xl opacity-50"></i>
+                            </div>
+                            <p class="text-sm">No characters found.</p>
+                            <button onclick="app.openCharacterEditor(null)" class="mt-2 text-mob-500 hover:text-mob-400 text-sm font-medium">Create your first character &rarr;</button>
+                        </div>`;
+                    return;
+                }
+
+                container.innerHTML = '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4" id="char-grid"></div>';
+                const grid = document.getElementById('char-grid');
+                const tpl = document.getElementById('tpl-char-card').innerHTML;
+
+                chars.forEach(char => {
+                    const thumbUrl = `${this.apiBase}/projects/_/file/library/characters/${char.id}/default.png`; 
+
+                    let html = tpl
+                        .replace('{{id}}', char.id)
+                        .replace('{{id}}', char.id) 
+                        .replace('{{name}}', char.name)
+                        .replace('{{thumb}}', thumbUrl);
+                    grid.innerHTML += html;
+                });
+            }
+
+            async openCharacterEditor(charId) {
+                const modal = document.getElementById('modal-character');
+                const form = document.getElementById('char-form');
+                const deleteZone = document.getElementById('char-delete-zone');
+                const assetList = document.getElementById('char-assets-list');
+                
+                assetList.innerHTML = '';
+                this.editingCharId = charId;
+
+                if (charId) {
+                    document.getElementById('char-id').disabled = true;
+                    document.getElementById('char-id').classList.add('opacity-50', 'cursor-not-allowed');
+                    deleteZone.classList.remove('hidden');
+
+                    const char = this.cache.characters.find(c => c.id === charId);
+                    if (char) {
+                        document.getElementById('char-id').value = char.id;
+                        document.getElementById('char-name').value = char.name;
+                        document.getElementById('char-desc').value = char.description || '';
+                        document.getElementById('char-thoughts').value = char.thoughts || '';
+                        document.getElementById('char-outfit').value = char.outfit || 'default';
+                    }
+                    this.loadCharacterAssets(charId);
+
+                } else {
+                    form.reset();
+                    document.getElementById('char-id').disabled = false;
+                    document.getElementById('char-id').classList.remove('opacity-50', 'cursor-not-allowed');
+                    deleteZone.classList.add('hidden');
+                    assetList.innerHTML = '<div class="flex flex-col items-center justify-center h-full text-gray-500 text-xs"><i class="fa-solid fa-save mb-2 text-xl"></i>Save metadata to unlock uploads</div>';
+                }
+
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+
+            async saveCharacter(e) {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData.entries());
+                data.tags = []; 
+                data.custom_data = {};
+
+                const res = await this.api('/library/characters', 'POST', data);
+                if (res) {
+                    this.toast('Character saved successfully!', 'success');
+                    this.editingCharId = data.id;
+                    
+                    const assetList = document.getElementById('char-assets-list');
+                    if(assetList.innerText.includes('Save metadata')) {
+                         this.loadCharacterAssets(data.id);
+                    }
+                    this.loadCharacters();
+                }
+            }
+
+            async deleteCurrentCharacter() {
+                if(!this.editingCharId) return;
+                if(!confirm(`Are you sure you want to delete ${this.editingCharId}?`)) return;
+
+                const res = await this.api(`/library/characters/${this.editingCharId}`, 'DELETE');
+                if(res) {
+                    this.toast('Character deleted.', 'success');
+                    this.closeModal('modal-character');
+                    this.loadCharacters();
+                }
+            }
+
+            async loadCharacterAssets(charId) {
+                const list = document.getElementById('char-assets-list');
+                list.innerHTML = '<div class="col-span-full text-center py-4"><i class="fa-solid fa-spinner fa-spin text-gray-500"></i></div>';
+                
+                const assets = await this.api(`/library/characters/${charId}/assets`);
+                list.innerHTML = '';
+
+                if(!assets || assets.length === 0) {
+                    list.innerHTML = '<div class="col-span-full text-center text-gray-600 text-xs py-10 border-2 border-dashed border-gray-800 rounded">No assets yet.<br>Upload using the button above.</div>';
+                    return;
+                }
+
+                assets.forEach(file => {
+                    const fullUrl = file.url_path; 
+                    this.renderAssetCard(list, file, fullUrl);
+                });
+            }
+
+            async uploadCharacterAssets(input) {
+                if (!this.editingCharId) {
+                    this.toast('Please save character first.', 'error');
+                    return;
+                }
+                const files = input.files;
+                if (files.length === 0) return;
+
+                for (let file of files) {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    const res = await this.api(`/library/characters/${this.editingCharId}/upload`, 'POST', formData, true);
+                    if(res) this.toast(`Uploaded ${file.name}`, 'success');
+                }
+                input.value = '';
+                this.loadCharacterAssets(this.editingCharId);
+            }
+
+            // --- Global Assets Logic ---
+
+            async loadGlobalAssets(type) {
+                const container = document.getElementById('content-area');
+                container.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500"><i class="fa-solid fa-circle-notch fa-spin text-2xl"></i></div>';
+
+                const assets = await this.api(`/library/assets/${type}`);
+                
+                if (!assets || assets.length === 0) {
+                    container.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full text-gray-500">
+                            <div class="w-16 h-16 bg-dark-800 rounded-full flex items-center justify-center mb-4 border border-gray-700">
+                                <i class="fa-solid ${type === 'images' ? 'fa-images' : 'fa-music'} text-2xl opacity-50"></i>
+                            </div>
+                            <p class="text-sm">No ${type} found.</p>
+                        </div>`;
+                    return;
+                }
+
+                container.innerHTML = '<div class="asset-grid p-2" id="global-grid"></div>';
+                const grid = document.getElementById('global-grid');
+
+                assets.forEach(file => {
+                    const fullUrl = file.url_path;
+                    this.renderAssetCard(grid, file, fullUrl, type === 'audio');
+                });
+            }
+
+            openGlobalUploadModal() {
+                document.getElementById('modal-upload-global').classList.remove('hidden');
+                document.getElementById('modal-upload-global').classList.add('flex');
+            }
+
+            async performGlobalUpload() {
+                const input = document.getElementById('global-file-input');
+                const file = input.files[0];
+                if(!file) return;
+
+                const type = this.currentView === 'backgrounds' ? 'images' : 'audio';
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const res = await this.api(`/library/assets/${type}`, 'POST', formData, true);
+                if (res) {
+                    this.toast('Uploaded successfully', 'success');
+                    this.closeModal('modal-upload-global');
+                    input.value = '';
+                    this.loadGlobalAssets(type);
+                }
+            }
+
+            // --- Helpers ---
+
+            renderAssetCard(container, file, url, isAudio = false) {
+                const tpl = document.getElementById('tpl-asset-card').innerHTML;
+                const tempDiv = document.createElement('div');
+                const sizeKb = (file.size / 1024).toFixed(1) + ' KB';
+
+                tempDiv.innerHTML = tpl
+                    .replace('{{filename}}', file.filename)
+                    .replace('{{filename}}', file.filename)
+                    .replace('{{size}}', sizeKb)
+                    .replace(/{{url}}/g, url);
+
+                const card = tempDiv.firstElementChild;
+
+                if (isAudio || file.filename.endsWith('.mp3') || file.filename.endsWith('.ogg')) {
+                    card.querySelector('img').style.display = 'none';
+                    card.querySelector('.asset-icon').classList.remove('hidden');
+                }
+
+                container.appendChild(card);
+            }
+
+            closeModal(id) {
+                document.getElementById(id).classList.add('hidden');
+                document.getElementById(id).classList.remove('flex');
+            }
+
+            toast(msg, type = 'info') {
+                const container = document.getElementById('toast-container');
+                const el = document.createElement('div');
+                
+                const colors = {
+                    success: 'bg-mob-600 text-white shadow-mob-900/50',
+                    error: 'bg-red-500 text-white shadow-red-900/50',
+                    info: 'bg-gray-700 text-white'
+                };
+
+                el.className = `${colors[type]} px-4 py-3 rounded-lg shadow-xl text-sm font-medium flex items-center gap-3 transform translate-y-10 opacity-0 transition-all duration-300 border border-white/10`;
+                el.innerHTML = `
+                    <i class="fa-solid ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-triangle-exclamation' : 'fa-info-circle'}"></i>
+                    ${msg}`;
+
+                container.appendChild(el);
+
+                requestAnimationFrame(() => {
+                    el.classList.remove('translate-y-10', 'opacity-0');
+                });
+
+                setTimeout(() => {
+                    el.classList.add('opacity-0', 'translate-y-2');
+                    setTimeout(() => el.remove(), 300);
+                }, 3000);
+            }
+        }
+
+        const app = new LibraryManager();
+    </script>
+</body>
+</html>

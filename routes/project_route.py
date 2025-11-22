@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Body
 from fastapi.responses import FileResponse
 
 # Import Models
+from src.minecraft_export import export_resource_pack
 from src.model import ProjectManifest, ScriptGroup
 
 # Import the Compiler Logic (The Processor)

@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MobTalker - Projects</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        mob: {
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            900: '#14532d',
+                        },
+                        dark: {
+                            700: '#2d2d2d',
+                            800: '#1e1e1e',
+                            900: '#121212',
+                            950: '#0a0a0a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e1e1e; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+        .project-item.active { background-color: #2d2d2d; border-left: 3px solid #22c55e; }
+    </style>
+</head>
+<body class="bg-dark-900 text-gray-200 font-sans h-screen flex flex-col overflow-hidden selection:bg-mob-500 selection:text-white">
+
+    <!-- GLOBAL TOP NAVBAR -->
+    <nav class="h-14 bg-dark-950 border-b border-gray-800 flex items-center justify-between px-4 z-30 flex-shrink-0">
+        <div class="flex items-center gap-3 w-64">
+            <div class="w-7 h-7 bg-mob-600 rounded flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-mob-900/50">M</div>
+            <span class="font-bold text-lg tracking-tight text-white">MobTalker SDK</span>
+        </div>
+
+        <div class="flex items-center h-full gap-8">
+            <a href="/projects" class="nav-link active h-full flex items-center px-4 text-sm font-medium text-white transition border-b-2 border-mob-500 bg-white/5">
+                <i class="fa-solid fa-code-branch mr-2"></i> Projects
+            </a>
+            <a href="/library-ui" class="nav-link h-full flex items-center px-4 text-sm font-medium text-gray-400 hover:text-white transition border-b-2 border-transparent">
+                <i class="fa-solid fa-book-open mr-2"></i> Library
+            </a>
+        </div>
+
+        <div class="flex items-center gap-4 w-64 justify-end">
+            <button class="text-gray-400 hover:text-white"><i class="fa-solid fa-gear"></i></button>
+            <div class="w-8 h-8 rounded-full bg-gray-700 border border-gray-600"></div>
+        </div>
+    </nav>
+
+    <!-- LAYOUT CONTENT -->
+    <div class="flex flex-1 overflow-hidden relative">
+        
+        <!-- SIDEBAR: PROJECT LIST -->
+        <aside class="w-72 bg-dark-800 border-r border-gray-800 flex flex-col z-20">
+            <div class="p-4 border-b border-gray-800 flex justify-between items-center">
+                <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Projects</h2>
+                <button onclick="app.openCreateModal()" class="w-6 h-6 rounded hover:bg-gray-700 text-mob-500 transition flex items-center justify-center" title="New Project">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            </div>
+
+            <!-- List -->
+            <div id="project-list" class="flex-1 overflow-y-auto">
+                <div class="text-center py-10 text-gray-500">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 flex flex-col bg-dark-900 relative overflow-hidden">
+            
+            <!-- State: No Project Selected -->
+            <div id="empty-state" class="flex flex-col items-center justify-center h-full text-gray-500">
+                <i class="fa-solid fa-cube text-6xl mb-4 opacity-20"></i>
+                <p>Select a project to view details</p>
+            </div>
+
+            <!-- State: Project View -->
+            <div id="project-view" class="hidden flex-col h-full">
+                
+                <!-- Project Header -->
+                <header class="h-20 border-b border-gray-800 flex items-center justify-between px-8 bg-dark-900/95 backdrop-blur z-10 flex-shrink-0">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span id="p-slug" class="bg-gray-800 text-gray-400 text-[10px] px-2 py-0.5 rounded font-mono border border-gray-700">slug</span>
+                            <span id="p-version" class="text-xs text-mob-500">v0.0.1</span>
+                        </div>
+                        <h1 id="p-name" class="text-2xl font-bold text-white">Project Name</h1>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <button onclick="app.saveManifest(true)" class="bg-dark-800 hover:bg-gray-700 text-mob-500 hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 border border-gray-700">
+                            <i class="fa-solid fa-save"></i> Save
+                        </button>
+                        <button onclick="app.compileProject()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 border border-gray-700">
+                            <i class="fa-solid fa-hammer"></i> Compile
+                        </button>
+                        <button onclick="app.exportProject()" class="bg-mob-600 hover:bg-mob-500 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-lg shadow-mob-900/20 transition flex items-center gap-2">
+                            <i class="fa-solid fa-file-export"></i> Export .zip
+                        </button>
+                        <div class="h-8 w-px bg-gray-700 mx-2"></div>
+                        <button onclick="app.deleteProject()" class="text-gray-500 hover:text-red-500 transition px-2">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Scrollable Body -->
+                <div class="flex-1 overflow-y-auto p-8">
+                    
+                    <!-- Metadata Cards -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                        <div class="lg:col-span-2 bg-dark-800 rounded-xl p-5 border border-gray-800">
+                            <h3 class="text-gray-500 text-xs uppercase font-bold mb-2">Description</h3>
+                            <p id="p-desc" class="text-gray-300 text-sm leading-relaxed">...</p>
+                        </div>
+                        <div class="bg-dark-800 rounded-xl p-5 border border-gray-800">
+                            <h3 class="text-gray-500 text-xs uppercase font-bold mb-2">Authors</h3>
+                            <div id="p-authors" class="flex flex-wrap gap-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Script Groups Section -->
+                    <div class="mb-4 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-white">Script Groups</h3>
+                            <p class="text-xs text-gray-500">Files are executed top-to-bottom per group.</p>
+                        </div>
+                        <button onclick="app.openGroupModal()" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded transition border border-gray-700 flex items-center gap-2">
+                            <i class="fa-solid fa-folder-plus"></i> New Group
+                        </button>
+                    </div>
+
+                    <!-- Groups Container -->
+                    <div id="script-groups-container" class="space-y-6 pb-10">
+                        <!-- Groups injected via JS -->
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: CREATE PROJECT (FULL) -->
+    <div id="modal-create" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-dark-800 rounded-xl shadow-2xl border border-gray-700 w-full max-w-lg">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-dark-900 rounded-t-xl">
+                <h2 class="text-lg font-bold text-white">Create New Project</h2>
+                <button onclick="app.closeModal('modal-create')" class="text-gray-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <form id="create-form" onsubmit="app.createProject(event)" class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Project Name</label>
+                        <input type="text" name="name" required oninput="app.generateSlug(this.value)" class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm focus:border-mob-500 outline-none text-white" placeholder="My New Mod">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Slug (Folder Name)</label>
+                        <input type="text" name="slug" id="input-slug" required class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm focus:border-mob-500 outline-none font-mono text-gray-300" placeholder="my_new_mod">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Description</label>
+                    <textarea name="description" rows="2" class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm focus:border-mob-500 outline-none text-white"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Authors (comma separated)</label>
+                        <input type="text" name="authors" class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm focus:border-mob-500 outline-none text-white" placeholder="Steve, Alex">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1">Version</label>
+                        <input type="text" name="version" value="0.1.0" class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm focus:border-mob-500 outline-none text-white">
+                    </div>
+                </div>
+
+                <div class="pt-4 flex justify-end gap-2">
+                    <button type="button" onclick="app.closeModal('modal-create')" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancel</button>
+                    <button type="submit" class="px-6 py-2 bg-mob-600 text-white rounded hover:bg-mob-500 text-sm font-medium shadow-lg shadow-mob-900/50">Create Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD SCRIPT GROUP -->
+    <div id="modal-add-group" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-dark-800 rounded-xl p-6 w-96 border border-gray-700 shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-4">New Script Group</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Display Name (UI)</label>
+                    <input type="text" id="new-group-name" class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm text-white focus:border-mob-500 outline-none" placeholder="e.g. Side Quests">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Slug (Output Filename)</label>
+                    <input type="text" id="new-group-slug" class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm text-gray-300 font-mono focus:border-mob-500 outline-none" placeholder="e.g. side_quests">
+                    <p class="text-[10px] text-gray-500 text-right mt-1">Will become side_quests.json</p>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 mt-6">
+                <button onclick="app.closeModal('modal-add-group')" class="px-3 py-1.5 text-gray-400 text-sm hover:text-white">Cancel</button>
+                <button onclick="app.performAddGroup()" class="px-3 py-1.5 bg-mob-600 text-white rounded text-sm hover:bg-mob-500">Create Group</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD SCRIPT -->
+    <div id="modal-add-script" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-dark-800 rounded-xl p-6 w-96 border border-gray-700 shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-4">Add Script</h3>
+            <input type="text" id="new-script-name" class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm text-white mb-1 focus:border-mob-500 outline-none" placeholder="chapter3">
+            <p class="text-[10px] text-gray-500 mb-4 text-right">.py will be added automatically</p>
+            <div class="flex justify-end gap-2">
+                <button onclick="app.closeModal('modal-add-script')" class="px-3 py-1.5 text-gray-400 text-sm hover:text-white">Cancel</button>
+                <button onclick="app.performAddScript()" class="px-3 py-1.5 bg-mob-600 text-white rounded text-sm hover:bg-mob-500">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container" class="fixed bottom-6 right-6 flex flex-col gap-2 pointer-events-none z-[60]"></div>
+
+    <script>
+        class ProjectManager {
+            constructor() {
+                this.apiBase = '/api';
+                this.currentProject = null; // Holds the full Manifest object
+                this.activeGroupIndex = null;
+                this.projects = [];
+                this.init();
+            }
+
+            async init() {
+                await this.loadProjectList();
+            }
+
+            // --- API HELPERS ---
+
+            async api(endpoint, method = 'GET', body = null) {
+                const options = { method, headers: { 'Content-Type': 'application/json' } };
+                if (body) options.body = JSON.stringify(body);
+
+                try {
+                    const res = await fetch(this.apiBase + endpoint, options);
+                    if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
+                    // Return text if empty or json
+                    const text = await res.text();
+                    return text ? JSON.parse(text) : true;
+                } catch (err) {
+                    this.toast(err.message, 'error');
+                    return null;
+                }
+            }
+
+            // --- PROJECT LISTING ---
+
+            async loadProjectList() {
+                const listEl = document.getElementById('project-list');
+                listEl.innerHTML = '<div class="text-center py-10 text-gray-500"><i class="fa-solid fa-circle-notch fa-spin"></i></div>';
+
+                const data = await this.api('/projects/');
+                this.projects = data || [];
+                
+                listEl.innerHTML = '';
+                if (this.projects.length === 0) {
+                    listEl.innerHTML = '<div class="p-6 text-center text-gray-500 text-sm">No projects found.<br>Create one to get started.</div>';
+                    return;
+                }
+
+                this.projects.forEach(p => {
+                    const item = document.createElement('div');
+                    item.className = `project-item p-4 border-b border-gray-800 cursor-pointer hover:bg-dark-700 transition group`;
+                    item.onclick = () => this.selectProject(p.slug, item);
+                    item.dataset.slug = p.slug;
+                    
+                    item.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-medium text-gray-200 text-sm group-hover:text-white transition">${p.name}</h3>
+                            <span class="text-[10px] text-gray-600 bg-dark-900 px-1.5 rounded">${p.version || '0.0.0'}</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1 truncate font-mono">${p.slug}</p>
+                    `;
+                    listEl.appendChild(item);
+                });
+            }
+
+            async selectProject(slug, domElement) {
+                // Find local copy of manifest
+                this.currentProject = this.projects.find(p => p.slug === slug);
+                if(!this.currentProject) return;
+
+                // UI: Update Sidebar
+                document.querySelectorAll('.project-item').forEach(el => el.classList.remove('active'));
+                if(domElement) domElement.classList.add('active');
+                else {
+                    const el = document.querySelector(`.project-item[data-slug="${slug}"]`);
+                    if(el) el.classList.add('active');
+                }
+
+                // UI: Switch Views
+                document.getElementById('empty-state').classList.add('hidden');
+                document.getElementById('project-view').classList.remove('hidden');
+                document.getElementById('project-view').classList.add('flex');
+
+                this.renderMetadata();
+                this.renderScriptGroups();
+            }
+
+            renderMetadata() {
+                const p = this.currentProject;
+                document.getElementById('p-name').innerText = p.name;
+                document.getElementById('p-slug').innerText = p.slug;
+                document.getElementById('p-version').innerText = `v${p.version || '0.1.0'}`;
+                document.getElementById('p-desc').innerText = p.description || "No description provided.";
+                
+                const authorContainer = document.getElementById('p-authors');
+                authorContainer.innerHTML = '';
+                if(p.authors && p.authors.length) {
+                    p.authors.forEach(auth => {
+                        authorContainer.innerHTML += `<span class="bg-dark-900 text-gray-400 text-xs px-2 py-1 rounded border border-gray-700 select-none">${auth}</span>`;
+                    });
+                } else {
+                    authorContainer.innerHTML = '<span class="text-gray-600 text-xs italic">Unknown</span>';
+                }
+            }
+
+            // --- SCRIPT GROUP RENDERING ---
+
+            renderScriptGroups() {
+                const container = document.getElementById('script-groups-container');
+                container.innerHTML = '';
+
+                const groups = this.currentProject.script_groups || [];
+
+                if(groups.length === 0) {
+                    container.innerHTML = `<div class="p-8 border-2 border-dashed border-gray-800 rounded-xl text-center text-gray-500">No script groups defined. <br>Create one above to start adding logic.</div>`;
+                    return;
+                }
+
+                groups.forEach((group, gIndex) => {
+                    const card = document.createElement('div');
+                    card.className = "bg-dark-800 border border-gray-700 rounded-xl overflow-hidden shadow-lg shadow-black/20";
+                    
+                    // Group Header
+                    let html = `
+                        <div class="bg-dark-950/30 p-4 border-b border-gray-700 flex justify-between items-center">
+                            <div>
+                                <h4 class="text-white font-semibold text-sm">${group.name}</h4>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <span class="text-[10px] text-gray-500 font-mono bg-dark-900 px-1 rounded border border-gray-800">File: ${group.slug}.json</span>
+                                    <span class="text-[10px] text-gray-500">${group.source_files.length} scripts</span>
+                                </div>
+                            </div>
+                            <button onclick="app.prepareAddScript(${gIndex})" class="text-xs bg-mob-600 hover:bg-mob-500 text-white px-3 py-1.5 rounded transition shadow-lg shadow-mob-900/20 font-medium">
+                                <i class="fa-solid fa-plus mr-1"></i> Script
+                            </button>
+                        </div>
+                        <div class="divide-y divide-gray-800/50 bg-dark-900/20">
+                    `;
+
+                    // File List inside Group
+                    if(group.source_files.length === 0) {
+                        html += `<div class="p-6 text-xs text-gray-600 italic text-center">No source files in this group.</div>`;
+                    } else {
+                        group.source_files.forEach((file, fIndex) => {
+                            // Logic for Up/Down buttons
+                            const isFirst = fIndex === 0;
+                            const isLast = fIndex === group.source_files.length - 1;
+                            
+                            const btnUp = isFirst ? `<span class="w-6"></span>` : 
+                                `<button onclick="app.moveScript(${gIndex}, ${fIndex}, -1)" class="w-6 h-6 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition"><i class="fa-solid fa-arrow-up text-[10px]"></i></button>`;
+                            
+                            const btnDown = isLast ? `<span class="w-6"></span>` : 
+                                `<button onclick="app.moveScript(${gIndex}, ${fIndex}, 1)" class="w-6 h-6 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition"><i class="fa-solid fa-arrow-down text-[10px]"></i></button>`;
+
+                            html += `
+                                <div class="p-3 flex items-center justify-between hover:bg-dark-800/80 transition group/row">
+                                    <div class="flex items-center gap-3">
+                                        <div class="text-gray-600 font-mono text-xs w-6 text-center select-none">${fIndex + 1}</div>
+                                        <i class="fa-solid fa-file-code text-blue-500/70"></i>
+                                        <span class="text-sm text-gray-300 font-mono">${file}</span>
+                                    </div>
+                                    <div class="flex items-center gap-1 opacity-0 group-hover/row:opacity-100 transition">
+                                        ${btnUp}
+                                        ${btnDown}
+                                        <div class="h-4 w-px bg-gray-700 mx-2"></div>
+                                        <button onclick="app.removeScript(${gIndex}, ${fIndex})" class="w-6 h-6 hover:bg-red-900/30 rounded text-gray-600 hover:text-red-400 transition"><i class="fa-solid fa-xmark text-xs"></i></button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    html += `</div>`; // Close list
+                    card.innerHTML = html;
+                    container.appendChild(card);
+                });
+            }
+
+            // --- MANIFEST ACTIONS ---
+
+            async saveManifest(notify = false) {
+                if (!this.currentProject) return;
+
+                const slug = this.currentProject.slug;
+                const endpoint = `/projects/${slug}/file/manifest.json`;
+                
+                // Wrap content in object per API requirement
+                const contentStr = JSON.stringify(this.currentProject, null, 4);
+                
+                const res = await this.api(endpoint, 'POST', { content: contentStr });
+                
+                if(res) {
+                    // Refresh view
+                    this.renderScriptGroups();
+                    
+                    // Only show toast if clicked manually or requested
+                    if (notify) {
+                        this.toast("Project saved successfully", "success");
+                    }
+                }
+            }
+
+            async moveScript(groupIndex, fileIndex, direction) {
+                const group = this.currentProject.script_groups[groupIndex];
+                const files = group.source_files;
+                
+                // Swap logic
+                const targetIndex = fileIndex + direction;
+                [files[fileIndex], files[targetIndex]] = [files[targetIndex], files[fileIndex]];
+                
+                await this.saveManifest();
+            }
+
+            async removeScript(groupIndex, fileIndex) {
+                if(!confirm("Remove this script from the group? The file will remain in the folder, but won't run.")) return;
+                
+                this.currentProject.script_groups[groupIndex].source_files.splice(fileIndex, 1);
+                await this.saveManifest();
+            }
+
+            // --- ADD SCRIPT FLOW ---
+
+            prepareAddScript(groupIndex) {
+                this.activeGroupIndex = groupIndex;
+                document.getElementById('new-script-name').value = '';
+                this.toggleModal('modal-add-script', true);
+                document.getElementById('new-script-name').focus();
+            }
+
+            async performAddScript() {
+                const rawName = document.getElementById('new-script-name').value.trim();
+                if(!rawName) return;
+
+                let filename = rawName;
+                if(!filename.endsWith('.py')) filename += '.py';
+
+                // 1. Create file on server
+                const slug = this.currentProject.slug;
+                await this.api(`/projects/${slug}/file/${filename}`, 'POST', { content: "# New Script\n" });
+
+                // 2. Add to manifest
+                const group = this.currentProject.script_groups[this.activeGroupIndex];
+                group.source_files.push(filename);
+
+                // 3. Save
+                await this.saveManifest();
+                
+                this.closeModal('modal-add-script');
+                this.toast(`Created ${filename}`, "success");
+            }
+
+            // --- ADD GROUP FLOW ---
+
+            openGroupModal() {
+                document.getElementById('new-group-name').value = '';
+                document.getElementById('new-group-slug').value = '';
+                this.toggleModal('modal-add-group', true);
+                document.getElementById('new-group-name').focus();
+            }
+
+            async performAddGroup() {
+                const name = document.getElementById('new-group-name').value.trim();
+                let slug = document.getElementById('new-group-slug').value.trim();
+
+                if (!name || !slug) {
+                    this.toast("Please fill in both fields", "error");
+                    return;
+                }
+
+                // Sanitize slug
+                slug = slug.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+
+                if (!this.currentProject.script_groups) this.currentProject.script_groups = [];
+                
+                this.currentProject.script_groups.push({
+                    name: name,
+                    slug: slug,
+                    source_files: []
+                });
+
+                await this.saveManifest();
+                
+                this.closeModal('modal-add-group');
+                this.toast(`Group "${name}" created`, "success");
+            }
+
+            // --- CREATE PROJECT FLOW ---
+
+            generateSlug(val) {
+                const slug = val.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
+                document.getElementById('input-slug').value = slug;
+            }
+
+            async createProject(e) {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                
+                const authorsStr = formData.get('authors') || "User";
+                const authorsArray = authorsStr.split(',').map(s => s.trim()).filter(s => s);
+
+                const manifest = {
+                    name: formData.get('name'),
+                    slug: formData.get('slug'),
+                    description: formData.get('description') || "",
+                    version: formData.get('version') || "0.1.0",
+                    authors: authorsArray,
+                    script_groups: [
+                        { slug: "main", name: "Main Story", source_files: [] }
+                    ]
+                };
+                
+                const res = await this.api('/projects/', 'POST', manifest);
+                if(res) {
+                    this.closeModal('modal-create');
+                    await this.loadProjectList();
+                    // Select the new project
+                    const newProj = this.projects.find(p => p.slug === manifest.slug);
+                    if(newProj) this.selectProject(newProj.slug);
+                    this.toast("Project created successfully", "success");
+                }
+            }
+
+            async deleteProject() {
+                if(!this.currentProject) return;
+                if(!confirm(`Delete project "${this.currentProject.slug}"? This cannot be undone.`)) return;
+
+                const res = await this.api(`/projects/${this.currentProject.slug}`, 'DELETE');
+                if(res) {
+                    this.toast('Project deleted', 'success');
+                    this.currentProject = null;
+                    document.getElementById('project-view').classList.add('hidden');
+                    document.getElementById('empty-state').classList.remove('hidden');
+                    this.loadProjectList();
+                }
+            }
+
+            // --- EXPORT / COMPILE ---
+
+            async compileProject() {
+                if(!this.currentProject) return;
+                this.toast("Compiling scripts...", "info");
+                await this.api(`/projects/${this.currentProject.slug}/compile`, 'POST');
+                this.toast("Compilation successful!", "success");
+            }
+
+            exportProject() {
+                if(!this.currentProject) return;
+                window.open(`${this.apiBase}/projects/${this.currentProject.slug}/export`, '_blank');
+                this.toast("Download started...", "success");
+            }
+
+            // --- UTILS ---
+
+            toggleModal(id, show) {
+                const el = document.getElementById(id);
+                if(show) { el.classList.remove('hidden'); el.classList.add('flex'); }
+                else { el.classList.add('hidden'); el.classList.remove('flex'); }
+            }
+            openCreateModal() { this.toggleModal('modal-create', true); }
+            closeModal(id) { this.toggleModal(id, false); }
+
+            toast(msg, type = 'info') {
+                const container = document.getElementById('toast-container');
+                const el = document.createElement('div');
+                
+                const colors = {
+                    success: 'bg-mob-600 text-white shadow-mob-900/50',
+                    error: 'bg-red-500 text-white shadow-red-900/50',
+                    info: 'bg-gray-700 text-white'
+                };
+
+                el.className = `${colors[type]} px-4 py-3 rounded-lg shadow-xl text-sm font-medium flex items-center gap-3 transform translate-y-10 opacity-0 transition-all duration-300 border border-white/10`;
+                el.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-check' : type === 'error' ? 'fa-triangle-exclamation' : 'fa-info-circle'}"></i> ${msg}`;
+
+                container.appendChild(el);
+
+                requestAnimationFrame(() => el.classList.remove('translate-y-10', 'opacity-0'));
+                setTimeout(() => {
+                    el.classList.add('opacity-0', 'translate-y-2');
+                    setTimeout(() => el.remove(), 300);
+                }, 3000);
+            }
+        }
+
+        const app = new ProjectManager();
+    </script>
+</body>
+</html>

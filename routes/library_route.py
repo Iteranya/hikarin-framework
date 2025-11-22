@@ -94,7 +94,7 @@ def list_character_assets(char_id: str):
                 filename=f.name,
                 path=str(f.absolute()),
                 # Assuming you mount '/static' to the library folder in main.py
-                url_path=f"/static/characters/{char_id}/{f.name}",
+                url_path=f"/media/characters/{char_id}/{f.name}",
                 size=f.stat().st_size
             ))
     return assets
@@ -140,7 +140,7 @@ def list_global_assets(asset_type: Literal["audio", "images"]):
             assets.append(AssetFile(
                 filename=f.name,
                 path=str(f.absolute()),
-                url_path=f"/static/{asset_type}/{f.name}",
+                url_path=f"/media/{asset_type}/{f.name}",
                 size=f.stat().st_size
             ))
     return assets
