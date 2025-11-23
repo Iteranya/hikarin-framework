@@ -50,6 +50,11 @@ async def get_library_page():
     """Serve the Library Manager."""
     return "static/library.html"
 
+@app.get("/hikarin", response_class=FileResponse) # Renamed for clarity
+async def get_library_page():
+    """Serve the Library Manager."""
+    return "static/hikarin/index.html"
+
 # ---------------------------------------------------------
 # 4. API ROUTES
 # ---------------------------------------------------------
