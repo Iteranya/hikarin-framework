@@ -20,12 +20,12 @@ export const definition = {
   "helpUrl": ""
 };
 
-export const generator = (block, pythonGenerator) => {
+export const generator = (block) => {
   // We trust the user to input a valid Python list string.
   const eventsList = block.getFieldValue('EVENTS_LIST');
   
-  if (pythonGenerator._inCondActions) {
-    return `        vn.unlock_dialogue(${eventsList}, nested=True),\n`;
+  if (Blockly.Python._inCondActions) {
+    return `    vn.unlock_dialogue(${eventsList}, nested=True),\n`;
   } else {
     return `    vn.unlock_dialogue(${eventsList})\n`;
   }

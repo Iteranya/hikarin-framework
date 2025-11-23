@@ -20,11 +20,11 @@ export const definition = {
   "helpUrl": ""
 };
 
-export const generator = (block, pythonGenerator) => {
+export const generator = (block) => {
   const labelName = block.getFieldValue('LABEL_NAME');
   // Ensure the label name is a valid identifier (basic sanitation)
   const safeLabelName = labelName.replace(/[^A-Za-z0-9_]/g, '');
-  if (pythonGenerator._inCondActions) {
+  if (Blockly.Python._inCondActions) {
     return `    vn.label("${safeLabelName}",nested=True)\n`;
   }else{
     return `    vn.label("${safeLabelName}")\n`;

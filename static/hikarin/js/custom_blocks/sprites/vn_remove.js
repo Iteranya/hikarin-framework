@@ -20,7 +20,12 @@ export const definition = {
   "helpUrl": ""
 };
 
-export const generator = (block, pythonGenerator) => {
+export const generator = (block) => {
   const charVar = block.getFieldValue('CHAR_VAR');
-  return `    vn.remove(${charVar})\n`;
+  if (Blockly.Python._inCondActions) {
+return `    vn.remove(${charVar},nested=True)\n`;
+  }else{
+return `    vn.remove(${charVar})\n`;
+  }
+  
 };

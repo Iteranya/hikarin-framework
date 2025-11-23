@@ -1,64 +1,43 @@
 /**
- * @fileoverview Defines the 'vn_choice' block.
- * Presents the player with multiple dialogue choices, each jumping to a different label.
+ * @fileoverview Defines the Choice Container and Option blocks.
+ * NOTE: You need to register BOTH definitions in your index.js
  */
 
+// --- BLOCK 1: THE CONTAINER ---
 export const definition = {
-  "type": "vn_choice",
-  "message0": "Show Choices",
-  "message1": "1: %1 goes to label %2",
-  "args1": [
-    { "type": "field_input", "name": "TEXT1", "text": "You are Monika" },
-    { "type": "field_input", "name": "LABEL1", "text": "knows_monika" }
-  ],
-  "message2": "2: %1 goes to label %2",
-  "args2": [
-    { "type": "field_input", "name": "TEXT2", "text": "You are Moni from MAS" },
-    { "type": "field_input", "name": "LABEL2", "text": "really_knows_monika" }
-  ],
-  "message3": "3: %1 goes to label %2",
-  "args3": [
-    { "type": "field_input", "name": "TEXT3", "text": "I don't know you" },
-    { "type": "field_input", "name": "LABEL3", "text": "do_not_know_monika" }
-  ],
-  "message4": "4: %1 goes to label %2",
-  "args4": [
-    { "type": "field_input", "name": "TEXT4", "text": "" },
-    { "type": "field_input", "name": "LABEL4", "text": "" }
+  "type": "vn_choice_menu", // Renamed to avoid conflict
+  "message0": "Show Choices %1 %2",
+  "args0": [
+    { "type": "input_dummy" },
+    { "type": "input_statement", "name": "OPTIONS", "check": "VN_OPTION" } 
+    // 'check' ensures only Option blocks can go here
   ],
   "previousStatement": null,
   "nextStatement": null,
   "colour": 260,
-  "tooltip": "Presents up to 4 choices to the player. Each choice must have text and a target label.",
-  "helpUrl": ""
+  "tooltip": "Container for choices. Drag 'Choice Option' blocks inside here.",
 };
 
-export const generator = (block, pythonGenerator) => {
-  const choices = [];
-  for (let i = 1; i <= 4; i++) {
-    const text = block.getFieldValue(`TEXT${i}`);
-    const label = block.getFieldValue(`LABEL${i}`);
+export const generator = (block) => {
+  // 1. Get all the code from the blocks stacked inside "OPTIONS"
+  // This will return a string like: "'lbl1': 'txt1',\n 'lbl2': 'txt2',\n"
+  const optionsCode = Blockly.Python.statementToCode(block, 'OPTIONS');
 
-    // Only add the choice if both the text and label fields are filled out.
-    if (text && label) {
-      const choiceText = pythonGenerator.quote_(text);
-      const choiceLabel = pythonGenerator.quote_(label);
-      // The format for the dictionary is {"Label Name": "Choice Text"}
-      choices.push(`${choiceLabel}: ${choiceText}`);
-    }
+  // 2. Clean up: remove the trailing comma and whitespace
+  // If empty, default to empty dict
+  const cleanOptions = optionsCode.trim().replace(/,$/, '');
+
+  if (!cleanOptions) {
+    return '# [Warning] Empty Choice Block\n';
   }
 
-  // If no valid choices were found, don't generate any code.
-  if (choices.length === 0) {
-    return '';
-  }
+  // 3. Wrap it in the Python Dictionary syntax
+  const dictStr = `{\n${optionsCode}    }`;
 
-  // Assemble the dictionary string with proper indentation.
-  const dict = `{\n        ${choices.join(',\n        ')}\n    }`;
-  if (pythonGenerator._inCondActions) {
-    return `    vn.choice(${dict},nested=True)\n`;
-  }else{
-    return `    vn.choice(${dict})\n`;
+  // 4. Handle your nesting logic
+  if (Blockly.Python._inCondActions) {
+    return `    vn.choice(${dictStr}, nested=True)\n`;
+  } else {
+    return `    vn.choice(${dictStr})\n`;
   }
-  
 };

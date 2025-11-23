@@ -30,13 +30,13 @@ export const definition = {
   "helpUrl": ""
 };
 
-export const generator = (block, pythonGenerator) => {
+export const generator = (block) => {
   const time = block.getFieldValue('TIME'); // "Day" or "Night"
 
   // Use our flag to generate the inner blocks correctly
-  pythonGenerator._inCondActions = true;
-  const actionsCode = pythonGenerator.statementToCode(block, 'ACTIONS');
-  pythonGenerator._inCondActions = false;
+  Blockly.Python._inCondActions = true;
+  const actionsCode = Blockly.Python.statementToCode(block, 'ACTIONS');
+  Blockly.Python._inCondActions = false;
 
   if (!actionsCode.trim()) {
     return '';

@@ -25,10 +25,10 @@ export const definition = {
   "helpUrl": ""
 };
 
-export const generator = (block, pythonGenerator) => {
+export const generator = (block) => {
   const charVar = block.getFieldValue('CHAR_VAR');
-  const dialogue = pythonGenerator.quote_(block.getFieldValue('DIALOGUE'));
-  if (pythonGenerator._inCondActions) {
+  const dialogue = Blockly.Python.quote_(block.getFieldValue('DIALOGUE'));
+  if (Blockly.Python._inCondActions) {
     return `    vn.say(${charVar}, ${dialogue},nested=True)\n`;
   }else{
     return `    vn.say(${charVar}, ${dialogue})\n`;

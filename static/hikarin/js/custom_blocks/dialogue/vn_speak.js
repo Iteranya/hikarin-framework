@@ -30,11 +30,11 @@ export const definition = {
   "helpUrl": ""
 };
 
-export const generator = (block, pythonGenerator) => {
+export const generator = (block) => {
   const charVar = block.getFieldValue('CHAR_VAR');
-  const dialogue = pythonGenerator.quote_(block.getFieldValue('DIALOGUE'));
-  const voice = pythonGenerator.quote_(block.getFieldValue('VOICE_FILE'));
-  if (pythonGenerator._inCondActions) {
+  const dialogue = Blockly.Python.quote_(block.getFieldValue('DIALOGUE'));
+  const voice = Blockly.Python.quote_(block.getFieldValue('VOICE_FILE'));
+  if (Blockly.Python._inCondActions) {
     return `    vn.speak(${charVar}, ${dialogue}, voice=${voice},nested=True)\n`;
   }else{
     return `    vn.speak(${charVar}, ${dialogue}, voice=${voice})\n`;

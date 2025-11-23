@@ -33,13 +33,13 @@ export const definition = {
   "helpUrl": ""
 };
 
-export const generator = (block, pythonGenerator) => {
+export const generator = (block) => {
   // The dropdown value is either "Global" or "Var"
   const scope = block.getFieldValue('SCOPE');
-  const varName = pythonGenerator.quote_(block.getFieldValue('VAR_NAME'));
+  const varName = Blockly.Python.quote_(block.getFieldValue('VAR_NAME'));
   // The value is taken as-is, allowing users to type numbers, True/False, or quoted strings.
   const value = block.getFieldValue('VALUE');
-  if (pythonGenerator._inCondActions) {
+  if (Blockly.Python._inCondActions) {
     return `    vn.set${scope}(${varName}, ${value}, nested=True)\n`;
   }else{
     return `    vn.set${scope}(${varName}, ${value})\n`;

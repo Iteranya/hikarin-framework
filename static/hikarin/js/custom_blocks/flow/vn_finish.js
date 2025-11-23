@@ -13,8 +13,8 @@ export const definition = {
   "helpUrl": ""
 };
 
-export const generator = (block, pythonGenerator) => {
-    if (pythonGenerator._inCondActions) {
+export const generator = (block) => {
+    if (Blockly.Python._inCondActions) {
         return `    vn.finish(nested=True)\n`;
     }else{
         return `    vn.finish()\n`;

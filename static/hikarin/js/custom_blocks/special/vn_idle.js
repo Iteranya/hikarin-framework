@@ -13,9 +13,9 @@ export const definition = {
   "helpUrl": ""
 };
 
-export const generator = (block, pythonGenerator) => {
-  if (pythonGenerator._inCondActions) {
-    return `        vn.idle_chats(nested=True),\n`;
+export const generator = (block) => {
+  if (Blockly.Python._inCondActions) {
+    return `    vn.idle_chats(nested=True),\n`;
   } else {
     return `    vn.idle_chats()\n`;
   }

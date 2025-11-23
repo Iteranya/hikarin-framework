@@ -20,11 +20,11 @@ export const definition = {
   "helpUrl": ""
 };
 
-export const generator = (block, pythonGenerator) => {
-  const spriteName = pythonGenerator.quote_(block.getFieldValue('SPRITE_NAME'));
+export const generator = (block) => {
+  const spriteName = Blockly.Python.quote_(block.getFieldValue('SPRITE_NAME'));
 
-  if (pythonGenerator._inCondActions) {
-    return `        vn.remove(${spriteName}, nested=True),\n`;
+  if (Blockly.Python._inCondActions) {
+    return `    vn.remove(${spriteName}, nested=True),\n`;
   } else {
     return `    vn.remove(${spriteName})\n`;
   }

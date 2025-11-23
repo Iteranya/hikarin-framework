@@ -36,17 +36,17 @@ export const definition = {
   "helpUrl": ""
 };
 
-export const generator = (block, pythonGenerator) => {
+export const generator = (block) => {
   const scope = block.getFieldValue('SCOPE'); // "Global" or ""
-  const varName = pythonGenerator.quote_(block.getFieldValue('VAR_NAME'));
+  const varName = Blockly.Python.quote_(block.getFieldValue('VAR_NAME'));
   const op = block.getFieldValue('OPERATOR'); // "Same", "NotSame", etc.
   const value = block.getFieldValue('VALUE');
 
   // THE MAGIC: Set a context flag before generating code for the inner blocks.
-  pythonGenerator._inCondActions = true;
-  const actionsCode = pythonGenerator.statementToCode(block, 'ACTIONS');
+  Blockly.Python._inCondActions = true;
+  const actionsCode = Blockly.Python.statementToCode(block, 'ACTIONS');
   // Unset the flag so it doesn't affect other blocks.
-  pythonGenerator._inCondActions = false;
+  Blockly.Python._inCondActions = false;
 
   // If there are no actions inside, we don't need to generate anything.
   if (!actionsCode.trim()) {

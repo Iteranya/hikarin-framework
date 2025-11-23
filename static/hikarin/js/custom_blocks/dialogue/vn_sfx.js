@@ -20,11 +20,11 @@ export const definition = {
   "helpUrl": ""
 };
 
-export const generator = (block, pythonGenerator) => {
-  const soundFile = pythonGenerator.quote_(block.getFieldValue('SOUND_FILE'));
+export const generator = (block) => {
+  const soundFile = Blockly.Python.quote_(block.getFieldValue('SOUND_FILE'));
   
-  if (pythonGenerator._inCondActions) {
-    return `        vn.voice_effect(${soundFile}, nested=True),\n`;
+  if (Blockly.Python._inCondActions) {
+    return `    vn.voice_effect(${soundFile}, nested=True),\n`;
   } else {
     return `    vn.voice_effect(${soundFile})\n`;
   }

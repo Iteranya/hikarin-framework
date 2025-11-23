@@ -40,7 +40,7 @@ export function createDefinition(characterOptions) {
 // BLOCK GENERATOR
 // This part is static. It just needs to know how to read the fields
 // from the block that the factory function created.
-export const generator = (block, pythonGenerator) => {
+export const generator = (block) => {
   // Get the user-defined variable name from the text input field.
   const varName = block.getFieldValue('VAR_NAME');
   

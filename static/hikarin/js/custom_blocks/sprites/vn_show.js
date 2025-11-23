@@ -34,12 +34,12 @@ export const definition = {
   "helpUrl": ""
 };
 
-export const generator = (block, pythonGenerator) => {
+export const generator = (block) => {
   const charVar = block.getFieldValue('CHAR_VAR');
-  const spriteName = pythonGenerator.quote_(block.getFieldValue('SPRITE_NAME'));
+  const spriteName = Blockly.Python.quote_(block.getFieldValue('SPRITE_NAME'));
   // The dropdown value directly corresponds to the Python function name.
   const positionFunc = block.getFieldValue('POSITION');
-  if (pythonGenerator._inCondActions) {
+  if (Blockly.Python._inCondActions) {
     return `    vn.${positionFunc}(${charVar}, ${spriteName}, nested=True)\n`;
   }else{
     return `    vn.${positionFunc}(${charVar}, ${spriteName})\n`;

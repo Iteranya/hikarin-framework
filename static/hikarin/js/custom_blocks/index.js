@@ -13,6 +13,7 @@ import * as vn_remove_sprite from './sprites/vn_remove_sprite.js';
 import * as vn_set_variable from './variables/vn_set_variable.js';
 import * as vn_modify_variable from './variables/vn_modify_variable.js';
 import * as vn_choice from './choices/vn_choice.js';
+import * as vn_choice_option from './choices/vn_choice_option.js';
 import * as vn_conditional from './conditional/vn_conditional.js';
 import * as vn_conditional_time from './conditional/vn_conditional_time.js';
 import * as vn_idle_chats from './special/vn_idle.js';
@@ -48,6 +49,7 @@ const allBlockModules = [
   
   // Category 5
   vn_choice,
+  vn_choice_option,
 
   // Category 6
   vn_conditional,
@@ -64,26 +66,32 @@ const allBlockModules = [
  * @param {Array} dynamicData.characterOptions - The list of characters for dropdowns.
  */
 export function getAllBlockDefinitions(dynamicData) {
+  console.log("🔍 DEBUG: Starting to gather block definitions...");
+  
   const definitions = [];
   for (const module of allBlockModules) {
     if (module.definition) {
-      // It's a static block, just add its definition
       definitions.push(module.definition);
     } else if (module.createDefinition) {
-      // It's a dynamic block! Call its factory function with the data.
       definitions.push(module.createDefinition(dynamicData.characterOptions));
+    } else {
+      console.warn("⚠️ DEBUG: Found a module without definition or createDefinition:", module);
     }
   }
+
+  console.log(`✅ DEBUG: Found ${definitions.length} block definitions.`);
+  console.log("📜 DEBUG: Block Types registered:", definitions.map(d => d.type));
+  
   return definitions;
 }
 
 /**
  * Registers the Python generator for every block module that has one.
- * @param {Blockly.Generator} pythonGenerator - The Python generator instance.
+ * @param {Blockly.Generator} Blockly.Python - The Python generator instance.
  */
-export function registerGenerators(pythonGenerator) {
-  // Safety check: if pythonGenerator is still undefined, stop here to prevent crash.
-  if (!pythonGenerator) {
+export function registerGenerators() {
+  // Safety check: if Blockly.Python is still undefined, stop here to prevent crash.
+  if (!Blockly.Python) {
     console.error("Python Generator is undefined. Check imports in main.js");
     return;
   }
@@ -98,12 +106,12 @@ export function registerGenerators(pythonGenerator) {
       
       if (blockType) {
         // COMPATIBILITY FIX:
-        // Newer Blockly uses pythonGenerator.forBlock[...]
-        // Older Blockly uses pythonGenerator[...]
-        if (pythonGenerator.forBlock) {
-          pythonGenerator.forBlock[blockType] = module.generator;
+        // Newer Blockly uses Blockly.Python.forBlock[...]
+        // Older Blockly uses Blockly.Python[...]
+        if (Blockly.Python.forBlock) {
+          Blockly.Python.forBlock[blockType] = module.generator;
         } else {
-          pythonGenerator[blockType] = module.generator;
+          Blockly.Python[blockType] = module.generator;
         }
       } else {
         console.warn('Could not determine block type for generator registration:', module);

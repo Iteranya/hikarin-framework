@@ -1,41 +1,459 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" class="dark">
 <head>
-  <meta charset="utf-8">
-  <title>Mob Talker Redux - Visual Workshop</title>
-  
-  <!-- Import Blockly -->
-   
-    <script src="https://unpkg.com/blockly/blockly.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MobTalker - Visual Editor</title>
     
-    <!-- 2. Load the default Blocks -->
+    <!-- TAILWIND & ICONS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- BLOCKLY IMPORTS -->
+    <script src="https://unpkg.com/blockly/blockly_compressed.js"></script>
     <script src="https://unpkg.com/blockly/blocks_compressed.js"></script>
-    
-    <!-- 3. Load the Python Generator -->
+    <script src="https://unpkg.com/blockly/msg/en.js"></script>
     <script src="https://unpkg.com/blockly/python_compressed.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    },
+                    colors: {
+                        mob: { 500: '#22c55e', 600: '#16a34a', 900: '#14532d' },
+                        dark: { 700: '#2d2d2d', 800: '#1e1e1e', 900: '#121212', 950: '#0a0a0a' }
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    /* 1. SCROLLBARS */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #1e1e1e; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+
+    /* 2. BLOCKLY MAIN CANVAS */
+    .blocklySvg { 
+        background-color: #121212 !important; 
+        outline: none;
+    }
+
+    /* 3. TOOLBOX (SIDEBAR) BACKGROUND FIX */
+    /* We target both old and new class names just in case */
+    .blocklyToolboxDiv, 
+    .blocklyToolbox { 
+        background-color: #1e1e1e !important; /* Forces Dark Background */
+        border-right: 1px solid #2d2d2d;
+    }
+
+    /* 4. TEXT COLORS (The categories) */
+    .blocklyTreeLabel { 
+        color: #d1d5db !important; /* Light Gray Text */
+        font-family: 'Inter', sans-serif; 
+        font-size: 13px;
+    }
+
+    /* 5. INTERACTION STATES */
+    /* Hover on category */
+    .blocklyTreeRow:not(.blocklyTreeSelected):hover { 
+        background-color: #2d2d2d !important; 
+    }
+
+    /* Selected category */
+    .blocklyTreeSelected .blocklyTreeRow { 
+        background-color: #22c55e15 !important; 
+        border-left: 4px solid #22c55e !important; 
+    }
+    .blocklyTreeSelected .blocklyTreeLabel { 
+        color: #22c55e !important; /* Green Text for active */
+        font-weight: 600; 
+    }
+
+    /* 6. FLYOUT (The menu that pops out with blocks) */
+    .blocklyFlyoutBackground { 
+        fill: #1e1e1e !important; 
+        fill-opacity: 0.95; 
+    }
     
-  <!-- Link to our external CSS -->
-  <link rel="stylesheet" href="static/hikarin/css/style.css">
+    /* 7. UI HELPERS (Tabs etc) */
+    .nav-link.active { color: #fff; border-bottom: 2px solid #22c55e; background: rgba(255,255,255,0.05); }
+    .editor-tab.active { background-color: #2d2d2d; color: #fff; border-bottom: 2px solid #22c55e; }
+    .glass-panel { background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(8px); border-left: 1px solid rgba(255, 255, 255, 0.1); }
+
+/* --- NUKE THE GHOST SCROLLBAR --- */
+    
+    /* Target the specific class from Inspect Element */
+    .blocklyFlyoutScrollbar {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+</style>
 </head>
-<body>
+<body class="bg-dark-900 text-gray-200 font-sans h-screen flex flex-col overflow-hidden selection:bg-mob-500 selection:text-white">
 
-  <h1>Mob Talker Redux SDK - Visual Scripting</h1>
+    <!-- 1. GLOBAL TOP NAVBAR -->
+    <nav class="h-14 bg-dark-950 border-b border-gray-800 flex items-center justify-between px-4 z-40 flex-shrink-0">
+        <div class="flex items-center gap-3 w-64">
+            <div class="w-7 h-7 bg-mob-600 rounded flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-mob-900/50">M</div>
+            <span class="font-bold text-lg tracking-tight text-white">MobTalker SDK</span>
+        </div>
 
-  <div id="workspace-container">
-    <div id="blocklyDiv"></div>
-    <div id="codeDiv">
-      <div class="label">Python Output</div>
-      <textarea id="generatedCode" readonly></textarea>
+        <div class="flex items-center h-full gap-8">
+            <a href="/projects" class="nav-link active h-full flex items-center px-4 text-sm font-medium text-white transition">
+                <i class="fa-solid fa-code-branch mr-2"></i> Projects
+            </a>
+            <a href="/library" class="nav-link h-full flex items-center px-4 text-sm font-medium text-gray-400 hover:text-white transition">
+                <i class="fa-solid fa-book-open mr-2"></i> Library
+            </a>
+        </div>
+
+        <div class="flex items-center gap-4 w-64 justify-end">
+            <div class="px-3 py-1 bg-dark-800 rounded border border-gray-700 flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span class="text-xs text-gray-400">Autosaved</span>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-gray-700 border border-gray-600"></div>
+        </div>
+    </nav>
+
+    <!-- 2. MAIN LAYOUT -->
+    <div class="flex flex-1 overflow-hidden relative">
+
+        <!-- SIDEBAR: FILE EXPLORER (Current Script Group) -->
+        <aside class="w-64 bg-dark-800 border-r border-gray-800 flex flex-col z-30">
+            <!-- Header -->
+            <div class="p-4 border-b border-gray-800">
+                <p class="text-[10px] uppercase font-bold text-gray-500 mb-1">Active Group</p>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-bold text-white truncate">Main Story</h2>
+                    <button class="text-gray-500 hover:text-white text-xs"><i class="fa-solid fa-ellipsis"></i></button>
+                </div>
+            </div>
+
+            <!-- File List -->
+            <div class="flex-1 overflow-y-auto py-2">
+                <div class="px-2">
+                    <!-- Active Script -->
+                    <div class="group flex items-center justify-between p-2 rounded bg-mob-900/20 border border-mob-500/20 cursor-pointer mb-1">
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <i class="fa-brands fa-python text-mob-500 text-sm"></i>
+                            <span class="text-sm text-white font-medium truncate">chapter1_intro.py</span>
+                        </div>
+                        <span class="w-2 h-2 rounded-full bg-mob-500"></span>
+                    </div>
+
+                    <!-- Other Script -->
+                    <div class="group flex items-center justify-between p-2 rounded hover:bg-dark-700 cursor-pointer transition mb-1 text-gray-400 hover:text-gray-200">
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <i class="fa-brands fa-python text-gray-600 group-hover:text-gray-400 text-sm"></i>
+                            <span class="text-sm truncate">chapter1_tavern.py</span>
+                        </div>
+                    </div>
+                     <!-- Other Script -->
+                     <div class="group flex items-center justify-between p-2 rounded hover:bg-dark-700 cursor-pointer transition mb-1 text-gray-400 hover:text-gray-200">
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <i class="fa-brands fa-python text-gray-600 group-hover:text-gray-400 text-sm"></i>
+                            <span class="text-sm truncate">chapter1_boss.py</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bottom Actions -->
+            <div class="p-3 border-t border-gray-800 bg-dark-900/50">
+                <button class="w-full py-1.5 text-xs text-gray-400 hover:text-white border border-gray-700 rounded hover:bg-gray-700 transition">
+                    <i class="fa-solid fa-plus mr-1"></i> New Script
+                </button>
+            </div>
+        </aside>
+
+        <!-- EDITOR AREA -->
+        <main class="flex-1 flex flex-col bg-dark-900 relative min-w-0">
+            
+            <!-- EDITOR TOOLBAR -->
+            <header class="h-10 bg-dark-800 border-b border-gray-800 flex items-center justify-between px-4 flex-shrink-0 select-none">
+                <!-- Left: View Switcher -->
+                <div class="flex h-full">
+                    <button onclick="editor.setView('visual')" id="tab-visual" class="editor-tab active h-full px-4 text-xs font-medium flex items-center gap-2 border-r border-gray-800 transition">
+                        <i class="fa-solid fa-puzzle-piece"></i> Visual
+                    </button>
+                    <button onclick="editor.setView('code')" id="tab-code" class="editor-tab h-full px-4 text-xs font-medium text-gray-400 hover:text-white hover:bg-dark-700 flex items-center gap-2 border-r border-gray-800 transition">
+                        <i class="fa-solid fa-code"></i> Source
+                    </button>
+                </div>
+
+                <!-- Center: File Info -->
+                <div class="text-xs text-gray-500 font-mono hidden md:block">
+                   projects/my_mod/main/chapter1_intro.py
+                </div>
+
+                <!-- Right: Actions -->
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-1 border-r border-gray-700 pr-3 mr-1">
+                        <button title="Undo (Ctrl+Z)" onclick="editor.undo()" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-700 text-gray-400 hover:text-white transition"><i class="fa-solid fa-rotate-left text-xs"></i></button>
+                        <button title="Redo (Ctrl+Y)" onclick="editor.redo()" class="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-700 text-gray-400 hover:text-white transition"><i class="fa-solid fa-rotate-right text-xs"></i></button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                         <button title="Zoom Out" onclick="editor.zoom(-1)" class="text-gray-400 hover:text-white"><i class="fa-solid fa-minus text-xs"></i></button>
+                         <button title="Reset Zoom" onclick="editor.zoom(0)" class="text-gray-400 hover:text-white"><i class="fa-solid fa-compress text-xs"></i></button>
+                         <button title="Zoom In" onclick="editor.zoom(1)" class="text-gray-400 hover:text-white"><i class="fa-solid fa-plus text-xs"></i></button>
+                    </div>
+                    <div class="w-px h-4 bg-gray-700 mx-1"></div>
+                    <button onclick="editor.toggleLivePreview()" id="btn-preview" class="text-xs bg-gray-700 hover:bg-mob-600 text-white px-3 py-1 rounded transition flex items-center gap-2">
+                        <i class="fa-solid fa-columns"></i> <span class="hidden sm:inline">Split View</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- WORKSPACE CONTAINER -->
+            <div class="flex-1 relative flex overflow-hidden">
+                
+                <!-- BLOCKLY DIV (The Canvas) -->
+                <div id="blocklyDiv" class="flex-1 bg-dark-900 z-10 relative"></div>
+
+                <!-- CODE PREVIEW (Right Panel) -->
+                <div id="codePreview" class="hidden w-96 glass-panel z-20 flex-col transition-all duration-300 transform translate-x-0 border-l border-gray-800">
+                    <div class="h-8 bg-dark-950/50 flex items-center justify-between px-3 border-b border-white/5">
+                        <span class="text-[10px] font-bold text-gray-500 uppercase">Generated Python</span>
+                        <button onclick="editor.copyCode()" class="text-gray-500 hover:text-white text-xs"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                    <textarea id="generatedCode" readonly class="flex-1 bg-transparent p-4 text-xs font-mono text-blue-100 resize-none outline-none leading-relaxed selection:bg-mob-900"></textarea>
+                </div>
+
+                <!-- FULL CODE EDITOR VIEW (Alternative Tab) -->
+                <div id="codeEditorView" class="hidden absolute inset-0 bg-dark-900 z-30 flex flex-col">
+                    <div class="flex-1 p-8 flex justify-center">
+                        <div class="w-full max-w-4xl">
+                            <div class="bg-dark-800 rounded-lg border border-gray-700 h-full flex flex-col shadow-2xl">
+                                <div class="p-2 border-b border-gray-700 bg-dark-950 rounded-t-lg flex gap-2">
+                                    <div class="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50"></div>
+                                    <div class="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
+                                    <div class="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50"></div>
+                                </div>
+                                <textarea id="fullSourceCode" class="flex-1 bg-dark-800 p-4 text-sm font-mono text-gray-300 resize-none outline-none" spellcheck="false"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
     </div>
-  </div>
 
-  <!-- Toolbox Definition remains the same -->
-  <xml id="toolbox" style="display: none">
-    <!-- ... Your entire <xml> toolbox definition goes here ... -->
-  </xml>
+    <!-- 3. BLOCKLY TOOLBOX DEFINITION (Hidden) -->
+    <xml id="toolbox" style="display: none">
+        <category name="Setup" colour="#D35400">
+            <block type="story_setup"></block>
+            <block type="define_character"></block>
+        </category>
+        <category name="Flow Control" colour="#5C81A6">
+            <block type="vn_label"></block>
+            <block type="vn_jump"></block>
+            <block type="vn_finish"></block>
+        </category>
+        <category name="Dialogue" colour="#5CA65C">
+            <block type="vn_say"></block>
+            <block type="vn_speak"></block>
+            <block type="vn_sound_effect"></block>
+        </category>
+        <category name="Visuals" colour="#A65C81">
+            <block type="vn_show"></block>
+            <block type="vn_remove"></block>
+            <block type="vn_remove_sprite"></block>
+        </category>
+        <category name="Logic" colour="#5C5CA6">
+            <block type="vn_choice_menu">
+                <statement name="OPTIONS">
+                    <block type="vn_choice_option">
+                        <field name="TEXT">Yes</field>
+                        <field name="LABEL">lbl_yes</field>
+                        <next>
+                            <block type="vn_choice_option">
+                                <field name="TEXT">No</field>
+                                <field name="LABEL">lbl_no</field>
+                            </block>
+                        </next>
+                    </block>
+                </statement>
+            </block>
+            <block type="vn_choice_option"></block>
+            <block type="vn_set_variable"></block>
+            <block type="vn_modify_variable"></block>
+            <block type="vn_conditional"></block>
+            <block type="vn_conditional_time"></block>
+        </category>
+        <category name="Extras" colour="#808080">
+            <block type="vn_idle_chats"></block>
+            <block type="vn_unlock_dialogue"></block>
+        </category>
+    </xml>
 
-  <!-- Load our main script as a module -->
-  <script type="module" src="static/hikarin/js/main.js"></script>
+    <!-- 4. JS LOGIC -->
+    <!-- Ideally load your main.js module here, but we'll inline the logic for the demo -->
+    <script type="module">
+        // Import your custom block definitions
+        import './static/hikarin/js/main.js'; 
+        // Note: In a real environment, main.js defines the custom blocks. 
+        // Since I can't load the external main.js here, the UI will load but blocks might be undefined visually 
+        // unless main.js is actually present. I will assume main.js handles Blockly.Blocks['...'] definitions.
+    </script>
 
+    <script>
+        class EditorManager {
+            constructor() {
+                this.workspace = null;
+                this.isPreviewOpen = false;
+                this.currentView = 'visual'; // 'visual' or 'code'
+                this.init();
+            }
+
+            init() {
+                // Initialize Blockly
+                this.workspace = Blockly.inject('blocklyDiv', {
+                    toolbox: document.getElementById('toolbox'),
+                    scrollbars: true,
+                    trashcan: true,
+                    zoom: {
+                        controls: false, // We use custom buttons
+                        wheel: true,
+                        startScale: 1.0,
+                        maxScale: 3,
+                        minScale: 0.3,
+                        scaleSpeed: 1.2
+                    },
+                    move: {
+                        scrollbars: true,
+                        drag: true,
+                        wheel: true
+                    },
+                    // theme: Blockly.Themes.Dark // Or Classic if preferred
+                });
+
+                // Listen for changes
+                this.workspace.addChangeListener(() => this.generateCode());
+
+                // Trigger initial resize
+                window.addEventListener('resize', () => this.resize());
+                setTimeout(() => this.resize(), 100);
+            }
+
+            resize() {
+                Blockly.svgResize(this.workspace);
+            }
+
+            // --- Toolbar Actions ---
+
+            undo() { this.workspace.undo(false); }
+            redo() { this.workspace.undo(true); }
+            
+            zoom(dir) {
+                if (dir === 0) {
+                    this.workspace.setScale(1);
+                    this.workspace.scrollCenter();
+                } else {
+                    const current = this.workspace.getScale();
+                    this.workspace.setScale(current + (dir * 0.2));
+                }
+            }
+
+            // --- View Management ---
+
+            toggleLivePreview() {
+                const preview = document.getElementById('codePreview');
+                const btn = document.getElementById('btn-preview');
+                
+                this.isPreviewOpen = !this.isPreviewOpen;
+                
+                if (this.isPreviewOpen) {
+                    preview.classList.remove('hidden');
+                    preview.classList.add('flex');
+                    btn.classList.add('bg-mob-600', 'text-white');
+                    btn.classList.remove('bg-gray-700');
+                } else {
+                    preview.classList.add('hidden');
+                    preview.classList.remove('flex');
+                    btn.classList.remove('bg-mob-600', 'text-white');
+                    btn.classList.add('bg-gray-700');
+                }
+                this.resize();
+            }
+
+            setView(view) {
+                this.currentView = view;
+                const visualTab = document.getElementById('tab-visual');
+                const codeTab = document.getElementById('tab-code');
+                const blocklyDiv = document.getElementById('blocklyDiv');
+                const codeEditor = document.getElementById('codeEditorView');
+                const previewPanel = document.getElementById('codePreview');
+
+                if (view === 'visual') {
+                    // UI State
+                    visualTab.classList.add('active', 'text-white');
+                    visualTab.classList.remove('text-gray-400');
+                    codeTab.classList.remove('active', 'text-white');
+                    codeTab.classList.add('text-gray-400');
+
+                    // Visibility
+                    blocklyDiv.style.visibility = 'visible';
+                    codeEditor.classList.add('hidden');
+                    
+                    // Re-open preview if it was open
+                    if(this.isPreviewOpen) previewPanel.classList.remove('hidden');
+
+                    this.resize();
+                } else {
+                    // Update full code view before showing
+                    const code = Blockly.Python.workspaceToCode(this.workspace);
+                    document.getElementById('fullSourceCode').value = code || "# No blocks in workspace";
+
+                    // UI State
+                    codeTab.classList.add('active', 'text-white');
+                    codeTab.classList.remove('text-gray-400');
+                    visualTab.classList.remove('active', 'text-white');
+                    visualTab.classList.add('text-gray-400');
+
+                    // Visibility
+                    blocklyDiv.style.visibility = 'hidden'; // Hide but keep in DOM to preserve state
+                    previewPanel.classList.add('hidden'); // Always hide preview in code mode
+                    codeEditor.classList.remove('hidden');
+                }
+            }
+
+            generateCode() {
+                try {
+                    const code = Blockly.Python.workspaceToCode(this.workspace);
+                    document.getElementById('generatedCode').value = code;
+                    // Also update full view if active? No, only on switch
+                } catch (e) {
+                    console.log("Blockly generation waiting for blocks...");
+                }
+            }
+
+            copyCode() {
+                const el = document.getElementById('generatedCode');
+                el.select();
+                document.execCommand('copy');
+                // Could add toast here
+            }
+        }
+
+        // Initialize when DOM ready
+        let editor;
+        window.addEventListener('load', () => {
+            editor = new EditorManager();
+        });
+    </script>
 </body>
 </html>

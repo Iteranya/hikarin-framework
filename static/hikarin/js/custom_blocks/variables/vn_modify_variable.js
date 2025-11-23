@@ -42,18 +42,18 @@ export const definition = {
   "helpUrl": ""
 };
 
-export const generator = (block, pythonGenerator) => {
+export const generator = (block) => {
   const op = block.getFieldValue('OPERATION'); // "add", "sub", or "mod"
   const scope = block.getFieldValue('SCOPE'); // "Global" or "Var"
-  const varName = pythonGenerator.quote_(block.getFieldValue('VAR_NAME'));
+  const varName = Blockly.Python.quote_(block.getFieldValue('VAR_NAME'));
   const value = block.getFieldValue('VALUE');
   
   // This logic correctly builds the function name based on the operation
   const functionName = (op === 'mod') ? `modVar${scope}` : `${op}Var${scope}`;
 
   // This is our "smarter" logic for conditional blocks!
-  if (pythonGenerator._inCondActions) {
-    return `        vn.${functionName}(${varName}, ${value}, nested=True),\n`;
+  if (Blockly.Python._inCondActions) {
+    return `    vn.${functionName}(${varName}, ${value}, nested=True),\n`;
   } else {
     return `    vn.${functionName}(${varName}, ${value})\n`;
   }
