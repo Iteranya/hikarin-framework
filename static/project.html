@@ -472,24 +472,43 @@
 
             async performAddScript() {
                 const rawName = document.getElementById('new-script-name').value.trim();
-                if(!rawName) return;
+                if (!rawName) return;
 
-                let filename = rawName;
-                if(!filename.endsWith('.py')) filename += '.py';
+                // Get the active script group to use its slug as a prefix
+                const group = this.currentProject.script_groups[this.activeGroupIndex];
+                if (!group) {
+                    this.toast("Error: Active script group not found.", "error");
+                    return;
+                }
+
+                // Sanitize the user-provided part of the name
+                let scriptNamePart = rawName.endsWith('.py') ? rawName.slice(0, -3) : rawName;
+                scriptNamePart = scriptNamePart.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_');
+
+                // Combine the group slug and the sanitized name to create the full filename
+                const filename = `${group.slug}_${scriptNamePart}.py`;
+                
+                // Check if a script with this name already exists in the group
+                if (group.source_files.includes(filename)) {
+                    this.toast(`Script "${filename}" already exists in this group.`, "error");
+                    return;
+                }
 
                 // 1. Create file on server
                 const slug = this.currentProject.slug;
-                await this.api(`/projects/${slug}/file/${filename}`, 'POST', { content: "# New Script\n" });
-
-                // 2. Add to manifest
-                const group = this.currentProject.script_groups[this.activeGroupIndex];
-                group.source_files.push(filename);
-
-                // 3. Save
-                await this.saveManifest();
+                const res = await this.api(`/projects/${slug}/file/${filename}`, 'POST', { content: `# New Script: ${filename}\n` });
                 
-                this.closeModal('modal-add-script');
-                this.toast(`Created ${filename}`, "success");
+                // Only proceed if the file was created successfully
+                if(res) {
+                    // 2. Add to manifest
+                    group.source_files.push(filename);
+
+                    // 3. Save
+                    await this.saveManifest();
+                    
+                    this.closeModal('modal-add-script');
+                    this.toast(`Created ${filename}`, "success");
+                }
             }
 
             // --- ADD GROUP FLOW ---

@@ -1,0 +1,8 @@
+/* css/style.css */
+body { background-color: #2a2a2a; color: #fff; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+h1 { margin: 0; padding: 10px 20px; background: #1e1e1e; border-bottom: 1px solid #444; font-size: 1.2rem; }
+#workspace-container { display: flex; flex: 1; overflow: hidden; }
+#blocklyDiv { flex: 3; height: 100%; }
+#codeDiv { flex: 1; display: flex; flex-direction: column; background: #1e1e1e; border-left: 1px solid #444; max-width: 400px; }
+#generatedCode { flex: 1; width: 100%; background: #1e1e1e; color: #dcdcdc; border: none; padding: 10px; resize: none; font-family: 'Consolas', monospace; font-size: 12px; outline: none; }
+.label { padding: 10px; font-weight: bold; background: #333; border-bottom: 1px solid #444; }

@@ -1,7 +1,12 @@
 from dataclasses import dataclass, field
+import json
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from enum import Enum
 
+
+
+BASE_CHAR_PATH = Path("library/characters")
 # ==========================================
 # ENUMS (For Script Logic / Constants)
 # ==========================================
@@ -31,21 +36,39 @@ class Status(str, Enum):
 @dataclass
 class Character:
     """
-    Defines a Character.
-    Saved as 'library/characters/{id}/data.json'.
+    Represents a character, with data that can be loaded from a JSON file.
     """
     id: str
     name: str
     description: str = ""
     thoughts: str = ""
     outfit: str = "default"
-    
-    # Tags for searching/filtering in UI (e.g. ["female", "monster", "aggressive"])
+    dyn_outfit:str = "default"
     tags: List[str] = field(default_factory=list)
-    
-    # The Catch-All for any extra data you might need later
-    # e.g. { "voice_pitch": 1.2, "height": 1.8, "favorite_item": "apple" }
+
     custom_data: Dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_id(cls, character_id: str):
+        """
+        A factory method to create a Character instance by loading
+        its data from 'library/characters/{character_id}/data.json'.
+        """
+        # 1. Construct the full path to the data file
+        file_path = BASE_CHAR_PATH / character_id / "data.json"
+        
+        # 2. Check if the file exists and raise a clear error if not
+        if not file_path.exists():
+            raise FileNotFoundError(f"Could not find character data at: {file_path}")
+            
+        # 3. Open, read, and parse the JSON file
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            
+        # 4. Create and return an instance of the class using the loaded data.
+        # The **data syntax automatically maps dictionary keys to the
+        # dataclass fields (e.g., "name" key becomes the name attribute).
+        return cls(**data)
 
 # ==========================================
 # PROJECT MODEL (The Orchestrator)

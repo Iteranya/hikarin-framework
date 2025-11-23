@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Body
 from fastapi.responses import FileResponse
 
 # Import Models
+from src.modules import VisualNovelModule
 from src.minecraft_export import export_resource_pack
 from src.model import ProjectManifest, ScriptGroup
 
@@ -155,27 +156,30 @@ def write_file(slug: str, filename: str, content: str = Body(..., embed=True)):
 
 @router.post("/{slug}/compile")
 def compile_project(slug: str):
+    # This version is packed with print statements for aggressive debugging.
+    
+    print("\n\n>>> COMPILATION STARTED <<<")
+    
     project_path = PROJECTS_DIR / slug
-    if not project_path.exists(): raise HTTPException(404, "Project not found")
+    if not project_path.exists():
+        raise HTTPException(404, "Project not found")
     
     manifest_path = project_path / "manifest.json"
     output_dir = project_path / "generated"
     output_dir.mkdir(exist_ok=True)
+    print(f">>> Project Path: {project_path}")
 
     # 1. Load Manifest
-    # We default to a basic Main Group if manifest is missing/broken
-    manifest_data = None
     script_groups = [ScriptGroup(slug="behavior", name="Main", source_files=["main.py"])]
-    
     if manifest_path.exists():
         try:
             with open(manifest_path) as f:
                 data = json.load(f)
-                # Convert raw dicts back into ScriptGroup objects
                 if "script_groups" in data:
                     script_groups = [ScriptGroup(**g) for g in data["script_groups"]]
+            print(">>> STEP 1: Manifest loaded successfully.")
         except Exception as e:
-            print(f"Manifest Error: {e}")
+            print(f">>> STEP 1: FAILED to load manifest: {e}")
 
     # Ensure SDK is in path
     if str(Path.cwd()) not in sys.path:
@@ -184,67 +188,85 @@ def compile_project(slug: str):
     compilation_report = {}
     logs = []
 
-    # ==================================================
     # 2. LOOP THROUGH EACH SCRIPT GROUP
-    # ==================================================
     for group in script_groups:
+        print(f"\n>>> STEP 2: Processing Group '{group.name}'")
         logs.append(f"--- Compiling Group: {group.name} ({group.slug}.json) ---")
         
-        group_dialogue_list = []
-        
-        # 3. Merge all Python Files in this Group
+        VisualNovelModule.reset()
+
+        # 3. Execute all Python Files in this Group
         for filename in group.source_files:
+            print(f"\n  >>> STEP 3: Processing file '{filename}'")
             file_path = project_path / filename
             
             if not file_path.exists():
+                print(f"  >>> File not found, skipping.")
                 logs.append(f"  [Skip] {filename} not found")
                 continue
 
             # Dynamic Import
-            # Unique namespace: proj_{slug}_{group}_{file}
             module_name = f"proj_{slug}_{group.slug}_{filename.replace('.', '_')}"
-            spec = importlib.util.spec_from_file_location(module_name, file_path)
             
-            if spec and spec.loader:
-                try:
-                    user_module = importlib.util.module_from_spec(spec)
-                    sys.modules[module_name] = user_module
-                    spec.loader.exec_module(user_module)
-                    
-                    if hasattr(user_module, "story"):
-                        result = user_module.story()
-                        if isinstance(result, list):
-                            group_dialogue_list.extend(result)
-                            logs.append(f"  [OK] {filename}: Added {len(result)} states")
-                        else:
-                            logs.append(f"  [ERR] {filename}: story() did not return list")
-                    else:
-                        logs.append(f"  [WARN] {filename}: No story() function")
-                except Exception as e:
-                     logs.append(f"  [CRIT] {filename} Failed: {str(e)}")
+            try:
+                print(f"  >>> STEP 4: Attempting to import '{filename}' as '{module_name}'")
+                spec = importlib.util.spec_from_file_location(module_name, file_path)
+                
+                if not (spec and spec.loader):
+                    print("  >>> FAILED: Could not create module spec.")
+                    continue
+
+                user_module = importlib.util.module_from_spec(spec)
+                sys.modules[module_name] = user_module
+                spec.loader.exec_module(user_module)
+                print(f"  >>> STEP 5: Module '{filename}' executed.")
+                
+                if hasattr(user_module, "story"):
+                    print("  >>> STEP 6: Found story() function. Executing it now...")
+                    # This is where your module's 'Compiling...' prints will appear
+                    user_module.story()
+                    print("  >>> STEP 7: story() function finished.")
+                    logs.append(f"  [OK] {filename}: Executed successfully")
+                else:
+                    print("  >>> WARNING: No story() function found in this file.")
+                    logs.append(f"  [WARN] {filename}: No story() function")
+
+            except Exception as e:
+                # ==========================================================
+                # THIS IS THE MOST IMPORTANT PART. IT WILL PRINT THE ERROR
+                # ==========================================================
+                print(f"  >>> STEP X: CRITICAL FAILURE while processing '{filename}'!")
+                traceback.print_exc() # This prints the full error to your console
+                # ==========================================================
+                logs.append(f"  [CRIT] {filename} Failed: {str(e)}")
+
 
         # 4. Compile the Group to JSON
+        print("\n>>> STEP 8: All files in group processed. Finalizing compilation...")
         try:
-            if group_dialogue_list:
-                # The Processor
-                final_fsm = process_fsm(group_dialogue_list)
+            final_story_list = VisualNovelModule().to_list()
+            print(f">>> STEP 9: Retrieved final story list with {len(final_story_list)} items.")
+
+            if final_story_list:
+                print(">>> STEP 10: Calling process_fsm...")
+                final_fsm = process_fsm(final_story_list)
+                print(f">>> STEP 11: process_fsm finished. Final state count: {len(final_fsm)}")
                 
-                # Save as {group.slug}.json
                 output_file = output_dir / f"{group.slug}.json"
-                with open(output_file, "w") as f:
+                with open(output_file, "w", encoding='utf-8') as f:
                     json.dump(final_fsm, f, indent=4)
+                print(f">>> STEP 12: Successfully saved to {output_file}")
                 
-                compilation_report[group.slug] = {
-                    "status": "success",
-                    "states": len(final_fsm),
-                    "file": f"{group.slug}.json"
-                }
+                compilation_report[group.slug] = {"status": "success", "states": len(final_fsm)}
             else:
-                compilation_report[group.slug] = {"status": "empty", "reason": "No dialogue found"}
+                compilation_report[group.slug] = {"status": "empty"}
                 
         except Exception as e:
+            print(">>> STEP Y: CRITICAL FAILURE during final processing (process_fsm or file save)!")
+            traceback.print_exc()
             compilation_report[group.slug] = {"status": "failed", "error": str(e)}
 
+    print("\n>>> COMPILATION FINISHED <<<\n")
     return {
         "message": "Project Compiled",
         "report": compilation_report,

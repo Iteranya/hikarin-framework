@@ -5,9 +5,38 @@
 # Feel free to customize it to your system~
 from src.model import Character
 import re
-class VisualNovelModule(): # Module Class, just add more function as you like
-    def __init__(self):
-        self.dialogueDict = []
+class VisualNovelModule:
+    # A class-level attribute to hold the single instance
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        """
+        This special method controls the object creation process.
+        """
+        # If the single instance does not exist yet...
+        if cls._instance is None:
+            # ...create it and store it in the class attribute.
+            print("--- Creating new VisualNovelModule instance ---")
+            cls._instance = super(VisualNovelModule, cls).__new__(cls)
+            # You can also initialize its state here
+            cls._instance.dialogueDict = [] 
+            # Add any other initializations you need
+        
+        # Always return the stored instance
+        return cls._instance
+
+    @classmethod
+    def reset(cls):
+        """
+        A crucial helper method to clear the instance between compilations.
+        This ensures compiling a new script group starts with a clean slate.
+        """
+        print("--- Resetting VisualNovelModule instance ---")
+        cls._instance = None
+
+    def to_list(self):
+        # This logic is a bit tricky now, see note below
+        return self.dialogueDict
 
     def initialize(self,scriptName):
         self.dialogueDict.append({

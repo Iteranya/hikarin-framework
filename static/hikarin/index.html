@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Mob Talker Redux - Visual Workshop</title>
+  
+  <!-- Import Blockly -->
+  <script src="https://unpkg.com/blockly/blockly_compressed.js"></script>
+  <script src="https://unpkg.com/blockly/blocks_compressed.js"></script>
+  <script src="https://unpkg.com/blockly/python_compressed.js"></script>
+  <script src="https://unpkg.com/blockly/msg/js/en.js"></script>
+
+  <!-- Link to our external CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <h1>Mob Talker Redux SDK - Visual Scripting</h1>
+
+  <div id="workspace-container">
+    <div id="blocklyDiv"></div>
+    <div id="codeDiv">
+      <div class="label">Python Output</div>
+      <textarea id="generatedCode" readonly></textarea>
+    </div>
+  </div>
+
+  <!-- Toolbox Definition remains the same -->
+  <xml id="toolbox" style="display: none">
+    <!-- ... Your entire <xml> toolbox definition goes here ... -->
+  </xml>
+
+  <!-- Load our main script as a module -->
+  <script type="module" src="js/main.js"></script>
+
+</body>
+</html>
