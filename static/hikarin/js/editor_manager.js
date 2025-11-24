@@ -16,9 +16,6 @@ export class EditorManager {
             console.error("EditorManager ERROR: Workspace not provided!");
             return;
         }
-
-        this.workspace.addChangeListener(() => this.generateCode());
-
         window.addEventListener('resize', () => this.resize());
     }
 
@@ -84,8 +81,11 @@ export class EditorManager {
             this.resize();
         } else {
             const code = Blockly.Python.workspaceToCode(this.workspace);
-            document.getElementById('fullSourceCode').value = code || "# No blocks in workspace";
-
+            
+            // Note: fullSourceCode is updated by file_manager on save,
+            // but for immediate viewing we can show generated code or keep existing
+            // Usually file_manager handles populating fullSourceCode
+            
             codeTab.classList.add('active', 'text-white');
             codeTab.classList.remove('text-gray-400');
             visualTab.classList.remove('active', 'text-white');
@@ -101,7 +101,8 @@ export class EditorManager {
     generateCode() {
         try {
             const code = Blockly.Python.workspaceToCode(this.workspace);
-            document.getElementById('generatedCode').value = code;
+            const el = document.getElementById('generatedCode');
+            if(el) el.value = code;
         } catch (e) {
             console.log("Blockly generation waiting for blocks...");
         }

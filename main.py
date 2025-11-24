@@ -3,7 +3,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 
 from routes import project_route, library_route
 
@@ -50,10 +50,26 @@ async def get_library_page():
     """Serve the Library Manager."""
     return "static/library.html"
 
-@app.get("/hikarin", response_class=FileResponse) # Renamed for clarity
-async def get_library_page():
-    """Serve the Library Manager."""
-    return "static/hikarin/index.html"
+@app.get("/hikarin/{project_slug}/{group_slug}", response_class=HTMLResponse)
+async def get_hikarin(project_slug: str, group_slug: str):
+    """Serve the Hikarin Editor with Project and Group context"""
+
+    template_path = "static/hikarin/index.html"
+    
+    # Ensure encoding is specified to prevent crashes on some systems
+    with open(template_path, "r", encoding="utf-8") as f:
+        html = f.read()
+
+    # The string inside your index.html we want to find
+    target_string = '<div id="project-data" style="display: none;" data-slug="" data-group=""></div>'
+    
+    # The string we want to put there instead
+    injected_string = f'<div id="project-data" style="display: none;" data-slug="{project_slug}" data-group="{group_slug}"></div>'
+
+    # Perform the swap
+    html = html.replace(target_string, injected_string)
+    
+    return html
 
 # ---------------------------------------------------------
 # 4. API ROUTES
