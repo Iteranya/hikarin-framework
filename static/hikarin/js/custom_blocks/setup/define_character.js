@@ -37,23 +37,16 @@ export function createDefinition(characterOptions) {
   };
 }
 
-// BLOCK GENERATOR
-// This part is static. It just needs to know how to read the fields
-// from the block that the factory function created.
 export const generator = (block) => {
   // Get the user-defined variable name from the text input field.
   const varName = block.getFieldValue('VAR_NAME');
-  
-  // Get the selected character ID from the dropdown.
+
   const charId = block.getFieldValue('CHAR_ID');
 
-  // Handle the case where the API might have failed.
   if (charId === 'error') {
     return '# ERROR: Could not define character due to loading error.\n';
   }
 
-  // Generate the Python code, e.g., 'm = Character.from_id("monika")'
-  // The indentation (4 spaces) is added automatically by statementToCode in the parent block.
   const code = `${varName} = Character.from_id("${charId}")\n`;
   return code;
 };

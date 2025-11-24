@@ -21,5 +21,5 @@ export const generator = (block) => {
 
   // Format: 'label_name': 'Display Text',
   // The indentation is handled by the Container calling statementToCode
-  return `    ${safeLabel}: ${safeText},\n`;
+  return `${safeLabel}: ${safeText},\n`;
 };

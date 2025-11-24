@@ -48,14 +48,13 @@ from src.model import Character`;
 ${header}
 
 def story():
-    # This is a singleton, so it safely gets the existing instance or creates a new one.
-    vn = VisualNovelModule()
+  vn = VisualNovelModule()
 
 ${setupCode}
-    # vn.start() is called after setup and before the main story flow.
-    vn.start()
 
 ${storyCode}
+
+  return vn.dialogueDict
 `;
 
   // Return the complete, formatted script.

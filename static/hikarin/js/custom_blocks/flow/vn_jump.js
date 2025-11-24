@@ -24,9 +24,9 @@ export const generator = (block) => {
   const labelName = block.getFieldValue('LABEL_NAME');
   const safeLabelName = labelName.replace(/[^A-Za-z0-9_]/g, '');
   if (Blockly.Python._inCondActions) {
-    return `    vn.jumpTo("${safeLabelName}", nested=True)\n`;
+    return `vn.jumpTo("${safeLabelName}", nested=True)\n`;
   }else{
-    return `    vn.jumpTo("${safeLabelName}")\n`;
+    return `vn.jumpTo("${safeLabelName}")\n`;
   }
   
 };

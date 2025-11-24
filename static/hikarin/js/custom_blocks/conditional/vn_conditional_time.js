@@ -43,6 +43,6 @@ export const generator = (block) => {
   }
 
   const functionName = `cond${time}`; // condDay or condNight
-  const code = `    actions_list = [\n${actionsCode}    ]\n    vn.${functionName}(actions=actions_list)\n`;
+  const code = `actions_list = [\n${actionsCode}    ]\nvn.${functionName}(actions=actions_list)\n`;
   return code;
 };

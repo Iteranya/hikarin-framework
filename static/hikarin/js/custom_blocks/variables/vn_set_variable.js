@@ -40,9 +40,9 @@ export const generator = (block) => {
   // The value is taken as-is, allowing users to type numbers, True/False, or quoted strings.
   const value = block.getFieldValue('VALUE');
   if (Blockly.Python._inCondActions) {
-    return `    vn.set${scope}(${varName}, ${value}, nested=True)\n`;
+    return `vn.set${scope}(${varName}, ${value}, nested=True)\n`;
   }else{
-    return `    vn.set${scope}(${varName}, ${value})\n`;
+    return `vn.set${scope}(${varName}, ${value})\n`;
   }
   
 };

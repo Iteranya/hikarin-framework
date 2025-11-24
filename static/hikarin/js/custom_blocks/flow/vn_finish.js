@@ -15,9 +15,9 @@ export const definition = {
 
 export const generator = (block) => {
     if (Blockly.Python._inCondActions) {
-        return `    vn.finish(nested=True)\n`;
+        return `vn.finish(nested=True)\n`;
     }else{
-        return `    vn.finish()\n`;
+        return `vn.finish()\n`;
     }
   
 };

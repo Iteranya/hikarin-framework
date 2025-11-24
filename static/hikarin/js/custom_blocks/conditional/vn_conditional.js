@@ -56,6 +56,6 @@ export const generator = (block) => {
   // Construct the final Python code.
   const functionName = `cond${op}${scope}`; // e.g., "condSameGlobal"
   
-  const code = `    actions_list = [\n${actionsCode}    ]\n    vn.${functionName}(${varName}, ${value}, actions=actions_list)\n`;
+  const code = `actions_list = [\n${actionsCode}    ]\nvn.${functionName}(${varName}, ${value}, actions=actions_list)\n`;
   return code;
 };

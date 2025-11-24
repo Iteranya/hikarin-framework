@@ -24,8 +24,8 @@ export const generator = (block) => {
   const spriteName = Blockly.Python.quote_(block.getFieldValue('SPRITE_NAME'));
 
   if (Blockly.Python._inCondActions) {
-    return `    vn.remove(${spriteName}, nested=True),\n`;
+    return `vn.remove(${spriteName}, nested=True),\n`;
   } else {
-    return `    vn.remove(${spriteName})\n`;
+    return `vn.remove(${spriteName})\n`;
   }
 };

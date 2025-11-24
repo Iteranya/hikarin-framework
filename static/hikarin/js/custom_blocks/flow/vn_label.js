@@ -25,9 +25,9 @@ export const generator = (block) => {
   // Ensure the label name is a valid identifier (basic sanitation)
   const safeLabelName = labelName.replace(/[^A-Za-z0-9_]/g, '');
   if (Blockly.Python._inCondActions) {
-    return `    vn.label("${safeLabelName}",nested=True)\n`;
+    return `vn.label("${safeLabelName}",nested=True)\n`;
   }else{
-    return `    vn.label("${safeLabelName}")\n`;
+    return `vn.label("${safeLabelName}")\n`;
   }
   
 };

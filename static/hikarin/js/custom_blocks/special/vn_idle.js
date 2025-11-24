@@ -15,8 +15,8 @@ export const definition = {
 
 export const generator = (block) => {
   if (Blockly.Python._inCondActions) {
-    return `    vn.idle_chats(nested=True),\n`;
+    return `vn.idle_chats(nested=True),\n`;
   } else {
-    return `    vn.idle_chats()\n`;
+    return `vn.idle_chats()\n`;
   }
 };

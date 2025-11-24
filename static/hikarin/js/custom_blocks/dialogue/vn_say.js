@@ -29,9 +29,9 @@ export const generator = (block) => {
   const charVar = block.getFieldValue('CHAR_VAR');
   const dialogue = Blockly.Python.quote_(block.getFieldValue('DIALOGUE'));
   if (Blockly.Python._inCondActions) {
-    return `    vn.say(${charVar}, ${dialogue},nested=True)\n`;
+    return `vn.say(${charVar}, ${dialogue},nested=True)\n`;
   }else{
-    return `    vn.say(${charVar}, ${dialogue})\n`;
+    return `vn.say(${charVar}, ${dialogue})\n`;
   }
   
 };

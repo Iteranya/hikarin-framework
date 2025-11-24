@@ -40,9 +40,9 @@ export const generator = (block) => {
   // The dropdown value directly corresponds to the Python function name.
   const positionFunc = block.getFieldValue('POSITION');
   if (Blockly.Python._inCondActions) {
-    return `    vn.${positionFunc}(${charVar}, ${spriteName}, nested=True)\n`;
+    return `vn.${positionFunc}(${charVar}, ${spriteName}, nested=True)\n`;
   }else{
-    return `    vn.${positionFunc}(${charVar}, ${spriteName})\n`;
+    return `vn.${positionFunc}(${charVar}, ${spriteName})\n`;
   }
   
 };

@@ -24,8 +24,8 @@ export const generator = (block) => {
   const soundFile = Blockly.Python.quote_(block.getFieldValue('SOUND_FILE'));
   
   if (Blockly.Python._inCondActions) {
-    return `    vn.voice_effect(${soundFile}, nested=True),\n`;
+    return `vn.voice_effect(${soundFile}, nested=True),\n`;
   } else {
-    return `    vn.voice_effect(${soundFile})\n`;
+    return `vn.voice_effect(${soundFile})\n`;
   }
 };

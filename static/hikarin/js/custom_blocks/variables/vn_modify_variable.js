@@ -53,8 +53,8 @@ export const generator = (block) => {
 
   // This is our "smarter" logic for conditional blocks!
   if (Blockly.Python._inCondActions) {
-    return `    vn.${functionName}(${varName}, ${value}, nested=True),\n`;
+    return `vn.${functionName}(${varName}, ${value}, nested=True),\n`;
   } else {
-    return `    vn.${functionName}(${varName}, ${value})\n`;
+    return `vn.${functionName}(${varName}, ${value})\n`;
   }
 };

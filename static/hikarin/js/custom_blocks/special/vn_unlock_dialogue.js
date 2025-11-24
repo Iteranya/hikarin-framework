@@ -25,8 +25,8 @@ export const generator = (block) => {
   const eventsList = block.getFieldValue('EVENTS_LIST');
   
   if (Blockly.Python._inCondActions) {
-    return `    vn.unlock_dialogue(${eventsList}, nested=True),\n`;
+    return `vn.unlock_dialogue(${eventsList}, nested=True),\n`;
   } else {
-    return `    vn.unlock_dialogue(${eventsList})\n`;
+    return `vn.unlock_dialogue(${eventsList})\n`;
   }
 };

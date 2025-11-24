@@ -363,6 +363,9 @@
                     const card = document.createElement('div');
                     card.className = "bg-dark-800 border border-gray-700 rounded-xl overflow-hidden shadow-lg shadow-black/20";
                     
+                    // NEW: Constructed Hikarin URL
+                    const hikarinUrl = `/hikarin/${this.currentProject.slug}/${group.slug}`;
+
                     // Group Header
                     let html = `
                         <div class="bg-dark-950/30 p-4 border-b border-gray-700 flex justify-between items-center">
@@ -373,9 +376,17 @@
                                     <span class="text-[10px] text-gray-500">${group.source_files.length} scripts</span>
                                 </div>
                             </div>
-                            <button onclick="app.prepareAddScript(${gIndex})" class="text-xs bg-mob-600 hover:bg-mob-500 text-white px-3 py-1.5 rounded transition shadow-lg shadow-mob-900/20 font-medium">
-                                <i class="fa-solid fa-plus mr-1"></i> Script
-                            </button>
+                            
+                            <div class="flex items-center gap-2">
+                                <!-- HIKARIN BUTTON ADDED HERE -->
+                                <a href="${hikarinUrl}" class="text-xs bg-gray-700 hover:bg-gray-600 text-gray-200 hover:text-white px-3 py-1.5 rounded transition border border-gray-600 font-medium flex items-center gap-2">
+                                    <i class="fa-solid fa-pen-to-square"></i> Editor
+                                </a>
+
+                                <button onclick="app.prepareAddScript(${gIndex})" class="text-xs bg-mob-600 hover:bg-mob-500 text-white px-3 py-1.5 rounded transition shadow-lg shadow-mob-900/20 font-medium">
+                                    <i class="fa-solid fa-plus mr-1"></i> Script
+                                </button>
+                            </div>
                         </div>
                         <div class="divide-y divide-gray-800/50 bg-dark-900/20">
                     `;
