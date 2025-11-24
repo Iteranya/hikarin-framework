@@ -17,6 +17,8 @@
     <script src="https://unpkg.com/blockly/msg/en.js"></script>
     <script src="https://unpkg.com/blockly/python_compressed.js"></script>
 
+    <script src="https://unpkg.com/hikarin-vn-viewer@latest/dist/hikarin-vn-viewer.umd.js"></script>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -108,31 +110,17 @@
 </head>
 <body class="bg-dark-900 text-gray-200 font-sans h-screen flex flex-col overflow-hidden selection:bg-mob-500 selection:text-white">
 
-    <!-- NAV -->
-    <nav class="h-14 bg-dark-950 border-b border-gray-800 flex items-center justify-between px-4 z-40 flex-shrink-0">
-        <div class="flex items-center gap-3 w-64">
-            <div class="w-7 h-7 bg-mob-600 rounded flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-mob-900/50">M</div>
-            <span class="font-bold text-lg tracking-tight text-white">MobTalker SDK</span>
-        </div>
-        <div class="flex items-center h-full gap-8">
-            <a href="/projects" class="nav-link active h-full flex items-center px-4 text-sm font-medium text-white transition"><i class="fa-solid fa-code-branch mr-2"></i> Projects</a>
-            <a href="/library" class="nav-link h-full flex items-center px-4 text-sm font-medium text-gray-400 hover:text-white transition"><i class="fa-solid fa-book-open mr-2"></i> Library</a>
-        </div>
-        <!-- Autosave Indicator -->
-        <div class="flex items-center gap-4 w-64 justify-end" id="save-status-container">
-            <div class="px-3 py-1 bg-dark-800 rounded border border-gray-700 flex items-center gap-2">
-                <div id="save-status-dot" class="w-2 h-2 rounded-full bg-gray-500"></div>
-                <span id="save-status-text" class="text-xs text-gray-400">Ready</span>
-            </div>
-            <div class="w-8 h-8 rounded-full bg-gray-700 border border-gray-600"></div>
-        </div>
-    </nav>
-
     <!-- LAYOUT -->
     <div class="flex flex-1 overflow-hidden relative">
 
         <!-- FILE EXPLORER -->
         <aside class="w-64 bg-dark-800 border-r border-gray-800 flex flex-col z-30">
+            <div class="flex items-center gap-4 w-64 justify-start" id="save-status-container">
+                <div class="px-3 py-1 bg-dark-800 rounded border border-gray-700 flex items-center gap-2">
+                    <div id="save-status-dot" class="w-2 h-2 rounded-full bg-gray-500"></div>
+                    <span id="save-status-text" class="text-xs text-gray-400">Ready</span>
+                </div>
+            </div>
             <div class="p-4 border-b border-gray-800">
                 <p class="text-[10px] uppercase font-bold text-gray-500 mb-1">Active Group</p>
                 <div class="flex items-center justify-between">
@@ -147,61 +135,95 @@
                 </div>
             </div>
             <div class="p-3 border-t border-gray-800 bg-dark-900/50">
-                <button class="w-full py-1.5 text-xs text-gray-400 hover:text-white border border-gray-700 rounded hover:bg-gray-700 transition">
+                <div class="p-3 border-t border-gray-800 bg-dark-900/50">
+    <!-- ADDED: onclick event -->
+                <button onclick="document.getElementById('modal-new-script').classList.remove('hidden'); document.getElementById('modal-new-script').classList.add('flex'); document.getElementById('inp-new-script-name').focus();" 
+                        class="w-full py-1.5 text-xs text-gray-400 hover:text-white border border-gray-700 rounded hover:bg-gray-700 transition">
                     <i class="fa-solid fa-plus mr-1"></i> New Script
                 </button>
             </div>
+            </div>
         </aside>
 
-        <!-- MAIN EDITOR -->
-        <main class="flex-1 flex flex-col bg-dark-900 relative min-w-0">
-            <!-- TOOLBAR -->
-            <header class="h-10 bg-dark-800 border-b border-gray-800 flex items-center justify-between px-4 flex-shrink-0 select-none">
-                <div class="flex h-full">
-                    <button onclick="editor.setView('visual')" id="tab-visual" class="editor-tab active h-full px-4 text-xs font-medium flex items-center gap-2 border-r border-gray-800 transition">
-                        <i class="fa-solid fa-puzzle-piece"></i> Visual
-                    </button>
-                    <button onclick="editor.setView('code')" id="tab-code" class="editor-tab h-full px-4 text-xs font-medium text-gray-400 hover:text-white hover:bg-dark-700 flex items-center gap-2 border-r border-gray-800 transition">
-                        <i class="fa-solid fa-code"></i> Source
-                    </button>
-                </div>
-                <!-- Current File Label -->
-                <div id="lbl-current-file" class="text-xs text-gray-500 font-mono hidden md:block">
-                   No File Selected
-                </div>
-                <div class="flex items-center gap-3">
-                    <button onclick="editor.toggleLivePreview()" id="btn-preview" class="text-xs bg-gray-700 hover:bg-mob-600 text-white px-3 py-1 rounded transition flex items-center gap-2">
-                        <i class="fa-solid fa-columns"></i> <span class="hidden sm:inline">Split View</span>
-                    </button>
-                </div>
-            </header>
-
-            <!-- WORKSPACE AREA -->
-            <div class="flex-1 relative flex overflow-hidden">
-                
-                <!-- 1. BLOCKLY CANVAS (Visual View) -->
-                <div id="blocklyDiv" class="flex-1 bg-dark-900 z-10 relative" style="visibility: visible;"></div>
-
-                <!-- 2. CODE EDITOR (Source View) - Now a sibling, not overlay -->
-                <div id="codeEditorView" class="hidden flex-1 bg-dark-900 flex flex-col z-10 relative">
-                    <div class="flex-1 p-4">
-                        <div class="bg-dark-800 rounded-lg border border-gray-700 h-full flex flex-col shadow-inner">
-                            <textarea id="fullSourceCode" class="flex-1 bg-dark-800 p-4 text-sm font-mono text-gray-300 resize-none outline-none" spellcheck="false"></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 3. PREVIEW PANEL (Split View) -->
-                <div id="codePreview" class="hidden w-96 glass-panel z-20 flex-col border-l border-gray-800">
-                    <div class="h-8 bg-dark-950/50 flex items-center justify-between px-3 border-b border-white/5">
-                        <span class="text-[10px] font-bold text-gray-500 uppercase">Generated Python</span>
-                        <button onclick="editor.copyCode()" class="text-gray-500 hover:text-white text-xs"><i class="fa-regular fa-copy"></i></button>
-                    </div>
-                    <textarea id="generatedCode" readonly class="flex-1 bg-transparent p-4 text-xs font-mono text-blue-100 resize-none outline-none leading-relaxed selection:bg-mob-900"></textarea>
-                </div>
-
+            <main class="flex-1 flex flex-col bg-dark-900 relative min-w-0">
+        <!-- TOOLBAR -->
+        <header class="h-10 bg-dark-800 border-b border-gray-800 flex items-center justify-between px-4 flex-shrink-0 select-none">
+            <div class="flex h-full">
+                <!-- TAB 1: VISUAL -->
+                <button onclick="editor.setView('visual')" id="tab-visual" class="editor-tab active h-full px-4 text-xs font-medium flex items-center gap-2 border-r border-gray-800 transition">
+                    <i class="fa-solid fa-puzzle-piece"></i> Visual
+                </button>
+                <!-- TAB 2: PLAY (Replaces Source) -->
+                <button onclick="editor.setView('play')" id="tab-play" class="editor-tab h-full px-4 text-xs font-medium text-gray-400 hover:text-white hover:bg-dark-700 flex items-center gap-2 border-r border-gray-800 transition">
+                    <i class="fa-solid fa-gamepad"></i> Play / Test
+                </button>
             </div>
-        </main>
+            
+            <div id="lbl-current-file" class="text-xs text-gray-500 font-mono hidden md:block">
+               No File Selected
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button onclick="editor.toggleCodeSidebar()" id="btn-code-sidebar" class="text-xs bg-gray-700 hover:bg-mob-600 text-white px-3 py-1 rounded transition flex items-center gap-2">
+                    <i class="fa-brands fa-python"></i> <span class="hidden sm:inline">Show Code</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- WORKSPACE AREA -->
+        <div class="flex-1 relative flex overflow-hidden">
+            
+            <!-- 1. BLOCKLY CANVAS -->
+            <div id="blocklyDiv" class="flex-1 bg-dark-900 z-10 relative"></div>
+
+            <!-- 2. GAME PLAYER (Replaces Code Editor) -->
+            <!-- 2. GAME PLAYER -->
+                <div id="gamePlayerView" class="hidden flex-1 bg-black z-10 relative flex-col overflow-hidden bg-[url('/static/img/grid.png')]">
+                    
+                    <!-- Loader -->
+                    <div id="game-loader" class="absolute inset-0 z-50 bg-dark-900/90 flex flex-col items-center justify-center hidden">
+                        <div class="w-8 h-8 border-4 border-mob-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                        <span class="text-xs text-gray-400 font-mono tracking-widest uppercase">Compiling Scene...</span>
+                    </div>
+
+                    <!-- 
+                        WRAPPER FIX:
+                        - justify-start: Pushes content to the TOP.
+                        - pt-12: Adds a small gap at the top.
+                        - No bottom padding needed, remaining space goes there automatically.
+                    -->
+                    <div class="w-full h-full flex items-center justify-start pt-12 flex-col">
+                        
+                        <!-- 
+                             GAME BOX:
+                             - max-h-[65vh]: Limits height to 65% of screen.
+                             - aspect-video: Keeps 16:9 ratio.
+                        -->
+                        <div id="vn-container" class="relative w-full max-w-5xl max-h-[65vh] aspect-video shadow-2xl bg-black border border-gray-800 rounded-lg ring-1 ring-white/10">
+                            <!-- Engine Injects Here -->
+                        </div>
+
+                        <!-- Optional: Label indicating where debug menu goes -->
+                        <div class="mt-4 text-[10px] text-gray-600 uppercase font-mono tracking-widest">
+                            Debug & Text Area Below
+                        </div>
+
+                    </div>
+                </div>
+
+            <!-- 3. PYTHON PREVIEW (Sidebar) -->
+            <div id="pythonSidebar" class="hidden w-96 glass-panel z-20 flex-col border-l border-gray-800 transition-all duration-300">
+                <div class="h-8 bg-dark-950/50 flex items-center justify-between px-3 border-b border-white/5 flex-shrink-0">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase">Generated Python</span>
+                    <button onclick="editor.copyCode()" class="text-gray-500 hover:text-white text-xs" title="Copy to Clipboard">
+                        <i class="fa-regular fa-copy"></i>
+                    </button>
+                </div>
+                <textarea id="generatedCode" readonly class="flex-1 bg-transparent p-4 text-xs font-mono text-blue-100 resize-none outline-none leading-relaxed selection:bg-mob-900"></textarea>
+            </div>
+
+        </div>
+    </main>
     </div>
 
     <!-- TOOLBOX XML (Same as before) -->
@@ -251,6 +273,37 @@
             <block type="vn_unlock_dialogue"></block>
         </category>
     </xml>
+        
+
+        <!-- MODAL: NEW SCRIPT -->
+        <div id="modal-new-script" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 backdrop-blur-sm">
+            <div class="bg-dark-800 rounded-xl p-6 w-96 border border-gray-700 shadow-2xl">
+                <h3 class="text-lg font-bold text-white mb-4">Create New Script</h3>
+                
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Script Name</label>
+                    <input type="text" id="inp-new-script-name" 
+                        class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm text-white focus:border-mob-500 outline-none" 
+                        placeholder="scene_01"
+                        onkeydown="if(event.key === 'Enter') window.fileManager.createNewScript()">
+                    <p class="text-[10px] text-gray-500 mt-1 text-right">
+                        Prefix <span class="font-mono text-mob-500" id="lbl-group-prefix">groupname_</span> will be added.
+                    </p>
+                </div>
+
+                <div class="flex justify-end gap-2">
+                    <button onclick="document.getElementById('modal-new-script').classList.add('hidden'); document.getElementById('modal-new-script').classList.remove('flex');" 
+                            class="px-3 py-1.5 text-gray-400 text-sm hover:text-white transition">
+                        Cancel
+                    </button>
+                    <button onclick="window.fileManager.createNewScript()" 
+                            class="px-3 py-1.5 bg-mob-600 text-white rounded text-sm hover:bg-mob-500 transition font-medium shadow-lg shadow-mob-900/20">
+                        Create
+                    </button>
+                </div>
+            </div>
+        </div>
+  
 
     <!-- JS MODULE -->
      <div id="project-data" style="display: none;" data-slug="" data-group=""></div>

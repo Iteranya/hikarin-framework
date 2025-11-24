@@ -310,3 +310,109 @@ def export_project(slug: str):
         import traceback
         traceback.print_exc()
         raise HTTPException(500, f"Export failed: {str(e)}")
+    
+
+@router.post("/{slug}/compile_temp/{group_slug}")
+def compile_temp(slug: str, group_slug: str):
+    """
+    Compiles a specific script group in memory and returns the JSON structure directly.
+    Does NOT save to the generated folder.
+    Useful for previews or debugging specific sections.
+    """
+    project_path = PROJECTS_DIR / slug
+    if not project_path.exists():
+        raise HTTPException(404, "Project not found")
+
+    manifest_path = project_path / "manifest.json"
+    
+    # 1. Load Manifest to find the specific Group
+    target_group = None
+    
+    # Default fallback if manifest missing (legacy/single file mode)
+    if not manifest_path.exists() and group_slug == "behavior":
+        target_group = ScriptGroup(slug="behavior", name="Main", source_files=["main.py"])
+    elif manifest_path.exists():
+        try:
+            with open(manifest_path) as f:
+                data = json.load(f)
+                if "script_groups" in data:
+                    for g_data in data["script_groups"]:
+                        if g_data["slug"] == group_slug:
+                            target_group = ScriptGroup(**g_data)
+                            break
+        except Exception as e:
+            raise HTTPException(500, f"Error reading manifest: {e}")
+
+    if not target_group:
+        raise HTTPException(404, f"Script Group '{group_slug}' not found in manifest.")
+
+    # Ensure SDK is in path
+    if str(Path.cwd()) not in sys.path:
+        sys.path.append(str(Path.cwd()))
+
+    # 2. Reset the Visual Novel Engine
+    VisualNovelModule.reset()
+    
+    # 3. Execute Python Files for this Group
+    for filename in target_group.source_files:
+        file_path = project_path / filename
+        
+        if not file_path.exists():
+            raise HTTPException(400, f"Source file '{filename}' missing.")
+
+        # Create a unique module name for this specific compile run
+        # (We overwrite the module in sys.modules to force a reload of code changes)
+        module_name = f"proj_{slug}_{group_slug}_{filename.replace('.', '_')}"
+        
+        # Force cleanup of previous import to ensure we get the latest code
+        if module_name in sys.modules:
+            del sys.modules[module_name]
+
+        try:
+            spec = importlib.util.spec_from_file_location(module_name, file_path)
+            if not (spec and spec.loader):
+                raise Exception("Could not create module spec")
+
+            user_module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = user_module
+            spec.loader.exec_module(user_module)
+            
+            if hasattr(user_module, "story"):
+                user_module.story()
+            else:
+                # Not a fatal error, but means no content added from this file
+                print(f"WARNING: No story() found in {filename}")
+
+        except Exception as e:
+            traceback.print_exc()
+            # Return the python error to the UI so the user sees what broke
+            return {
+                "status": "error",
+                "file": filename,
+                "error_type": type(e).__name__,
+                "message": str(e)
+            }
+
+    # 4. Process into FSM (Compile Logic)
+    try:
+        final_story_list = VisualNovelModule().to_list()
+        
+        if not final_story_list:
+            return {"status": "empty", "data": []}
+
+        final_fsm = process_fsm(final_story_list)
+        
+        # 5. Return the JSON directly
+        return {
+            "status": "success",
+            "group": group_slug,
+            "state_count": len(final_fsm),
+            "data": final_fsm
+        }
+        
+    except Exception as e:
+        traceback.print_exc()
+        return {
+            "status": "compiler_error",
+            "message": str(e)
+        }

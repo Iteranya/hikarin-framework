@@ -73,10 +73,10 @@ async function initializeApp() {
     });
 
     // 4. Initialize Managers
-    const editor = new EditorManager(workspace);
+    const editor = new EditorManager(workspace, data.slug, data.group);
     
-    // !!! CRITICAL FIX: Pass data.group here !!!
     const fileManager = new FileManager(data.slug, data.group, editor, workspace);
+    
 
     window.editor = editor;
     window.fileManager = fileManager;

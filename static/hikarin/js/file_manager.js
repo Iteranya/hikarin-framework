@@ -1,7 +1,6 @@
 // js/file_manager.js
 
 export class FileManager {
-    // !!! CRITICAL FIX: Added groupSlug to constructor !!!
     constructor(projectSlug, groupSlug, editorManager, workspace) {
         this.projectSlug = projectSlug;
         this.groupSlug = groupSlug; 
@@ -12,6 +11,10 @@ export class FileManager {
         this.DATA_MARKER = '"""### BLOCKLY_DATA ###';
         this.sidebarList = document.querySelector('#fileListContainer');
         this.lblCurrentFile = document.getElementById('lbl-current-file');
+
+        // Update the Modal Hint to show the user the prefix
+        const prefixLbl = document.getElementById('lbl-group-prefix');
+        if(prefixLbl) prefixLbl.innerText = `${this.groupSlug}_`;
     }
 
     async init() {
@@ -23,14 +26,12 @@ export class FileManager {
         this.sidebarList.innerHTML = '<div class="text-xs text-gray-500 text-center mt-4">Loading Group...</div>';
 
         try {
-            // 1. Fetch Manifest
             const res = await fetch(`/api/projects/${this.projectSlug}/file/manifest.json`);
             if (!res.ok) throw new Error("Could not load manifest.json");
             
             const rawData = await res.json();
             const manifest = JSON.parse(rawData.content);
 
-            // 2. Find the Active Group using this.groupSlug
             const activeGroup = manifest.script_groups.find(g => g.slug === this.groupSlug);
 
             if (!activeGroup) {
@@ -38,13 +39,9 @@ export class FileManager {
                 this.sidebarList.innerHTML = `<div class="text-red-500 text-xs p-2">Group '${this.groupSlug}' not found</div>`;
                 return;
             }
-
-            console.log(`📂 DEBUG: Files found:`, activeGroup.source_files);
             
-            // 3. Render
             this.renderSidebar(activeGroup.source_files);
 
-            // 4. Auto-load
             if (!this.currentFile && activeGroup.source_files.length > 0) {
                 this.loadFile(activeGroup.source_files[0]);
             }
@@ -88,8 +85,7 @@ export class FileManager {
         this.currentFile = filename;
         if(this.lblCurrentFile) this.lblCurrentFile.innerText = filename;
         
-        // Refresh sidebar to update highlight
-        // (Optimized: we don't need to re-fetch manifest, just re-render if we stored files, but for now this is safe)
+        // Update sidebar highlighting
         const currentChildren = Array.from(this.sidebarList.children);
         currentChildren.forEach(child => {
             if(child.innerText.includes(filename)) {
@@ -106,27 +102,42 @@ export class FileManager {
             const data = await res.json();
             const rawContent = data.content;
 
+            // --- FIX START: Safe DOM Update ---
+            const fullSourceEl = document.getElementById('fullSourceCode');
+            const generatedEl = document.getElementById('generatedCode');
+
             if (rawContent.includes(this.DATA_MARKER)) {
+                // CASE A: File has Visual Blocks
                 const parts = rawContent.split(this.DATA_MARKER);
                 const pythonCode = parts[0].trim();
                 let jsonString = parts[1].replace(/"""\s*$/, "").trim();
 
-                document.getElementById('fullSourceCode').value = pythonCode;
+                // If the old editor exists, populate it (backward compat)
+                if (fullSourceEl) fullSourceEl.value = pythonCode;
                 
                 try {
                     const blockData = JSON.parse(jsonString);
                     this.workspace.clear();
                     Blockly.serialization.workspaces.load(blockData, this.workspace);
+                    
+                    // Update the sidebar preview
+                    this.editor.generateCode();
                 } catch (jsonErr) {
                     console.error("⚠️ JSON Parse Error:", jsonErr);
                 }
 
             } else {
-                document.getElementById('fullSourceCode').value = rawContent;
+                // CASE B: Pure Python File (No blocks)
+                if (fullSourceEl) fullSourceEl.value = rawContent;
+                
+                // Also put it in the sidebar so we can at least see it
+                if (generatedEl) generatedEl.value = rawContent;
+                
                 this.workspace.clear(); 
+                // Note: We do NOT call generateCode() here, because it would overwrite 
+                // the raw python we just loaded with empty block code.
             }
-
-            this.editor.generateCode();
+            // --- FIX END ---
 
         } catch (e) {
             console.error("Failed to load file:", e);
@@ -152,7 +163,10 @@ export class FileManager {
             });
 
             this.showSaveStatus("Autosaved", "text-gray-400", "bg-green-500");
-            document.getElementById('fullSourceCode').value = pythonCode;
+            
+            // --- FIX: Check before setting ---
+            const fullSourceEl = document.getElementById('fullSourceCode');
+            if (fullSourceEl) fullSourceEl.value = pythonCode;
 
         } catch (e) {
             console.error("Save failed:", e);
@@ -166,5 +180,69 @@ export class FileManager {
         if(txtEl) txtEl.className = `text-xs ${textColor}`;
         if(txtEl) txtEl.innerText = text;
         if(dotEl) dotEl.className = `w-2 h-2 rounded-full animate-pulse ${dotColor}`;
+    }
+
+    async createNewScript() {
+        const inputEl = document.getElementById('inp-new-script-name');
+        const modal = document.getElementById('modal-new-script');
+        const rawName = inputEl.value.trim();
+
+        if (!rawName) return;
+
+        // 1. Sanitize & Format Name
+        // Ensure it has .py and prefix with group slug for organization
+        let scriptName = rawName.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+        
+        // Remove .py if user added it, we will add it back
+        if(scriptName.endsWith('_py')) scriptName = scriptName.slice(0, -3);
+
+        const filename = `${this.groupSlug}_${scriptName}.py`;
+
+        try {
+            // 2. Fetch Manifest to update it
+            const resManifest = await fetch(`/api/projects/${this.projectSlug}/file/manifest.json`);
+            if (!resManifest.ok) throw new Error("Load manifest failed");
+            
+            const rawData = await resManifest.json();
+            const manifest = JSON.parse(rawData.content);
+            const activeGroup = manifest.script_groups.find(g => g.slug === this.groupSlug);
+
+            // 3. Check for duplicates
+            if (activeGroup.source_files.includes(filename)) {
+                alert("File already exists in this group!");
+                return;
+            }
+
+            // 4. Create the File on Server
+            const initialContent = `# Script: ${filename}\nfrom src.modules import VisualNovelModule\n\nvn = VisualNovelModule()\n\ndef story():\n    vn.label('start')\n    vn.say('Player', 'Hello World!')\n    vn.finish()\n`;
+            
+            await fetch(`/api/projects/${this.projectSlug}/file/${filename}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: initialContent })
+            });
+
+            // 5. Update Manifest
+            activeGroup.source_files.push(filename);
+            
+            await fetch(`/api/projects/${this.projectSlug}/file/manifest.json`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: JSON.stringify(manifest, null, 4) })
+            });
+
+            // 6. Reset UI
+            inputEl.value = '';
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            // 7. Reload list and open new file
+            await this.loadFileList();
+            await this.loadFile(filename);
+
+        } catch (e) {
+            console.error("Create Script Failed:", e);
+            alert("Failed to create script. Check console.");
+        }
     }
 }

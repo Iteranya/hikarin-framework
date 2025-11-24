@@ -125,7 +125,7 @@ class VisualNovelModule:
     def background(self,background):
         result = {
             "type":"modify_background",
-            "background":"asset/"+background
+            "background":"images/"+background
         }
         self.dialogueDict.append(result)
         return result
