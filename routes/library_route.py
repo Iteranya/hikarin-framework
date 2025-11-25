@@ -80,23 +80,31 @@ def delete_character(char_id: str):
 @router.get("/characters/{char_id}/assets", response_model=List[AssetFile])
 def list_character_assets(char_id: str):
     """
-    Lists all files inside a specific character's folder
+    Lists all files inside a specific character's 'default' folder
     (excluding data.json).
     """
-    folder = CHAR_DIR / char_id
-    if not folder.exists():
+    # 1. Check if the character itself exists
+    char_root = CHAR_DIR / char_id
+    if not char_root.exists():
         raise HTTPException(404, "Character not found")
     
+    # 2. Target the 'default' subdirectory
+    asset_folder = char_root / "default"
+    
     assets = []
-    for f in folder.iterdir():
-        if f.is_file() and f.name != "data.json":
-            assets.append(AssetFile(
-                filename=f.name,
-                path=str(f.absolute()),
-                # Assuming you mount '/static' to the library folder in main.py
-                url_path=f"/media/characters/{char_id}/{f.name}",
-                size=f.stat().st_size
-            ))
+    
+    # 3. Check if 'default' folder exists before trying to iterate
+    if asset_folder.exists():
+        for f in asset_folder.iterdir():
+            if f.is_file() and f.name != "data.json":
+                assets.append(AssetFile(
+                    filename=f.name,
+                    path=str(f.absolute()),
+                    # Matches the physical structure: /characters/{id}/default/{file}
+                    url_path=f"/media/characters/{char_id}/default/{f.name}",
+                    size=f.stat().st_size
+                ))
+            
     return assets
 
 @router.post("/characters/{char_id}/upload")
@@ -105,18 +113,29 @@ async def upload_character_asset(
     file: UploadFile = File(...)
 ):
     """
-    Uploads a sprite/skin specifically for this character.
+    Uploads a sprite/skin specifically for this character into the 'default' folder.
     """
-    folder = CHAR_DIR / char_id
-    if not folder.exists():
+    # 1. Check if the character root folder exists
+    char_root = CHAR_DIR / char_id
+    if not char_root.exists():
         raise HTTPException(404, "Character does not exist. Create it first.")
     
-    file_location = folder / file.filename
+    # 2. Define the 'default' folder path
+    target_folder = char_root / "default"
+    
+    # 3. Create the 'default' folder if it doesn't exist yet
+    target_folder.mkdir(parents=True, exist_ok=True)
+    
+    file_location = target_folder / file.filename
     
     with open(file_location, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
         
-    return {"status": "uploaded", "filename": file.filename}
+    return {
+        "status": "uploaded", 
+        "filename": file.filename, 
+        "subfolder": "default"
+    }
 
 # ==========================================
 # 3. GLOBAL ASSETS (Audio/Backgrounds)

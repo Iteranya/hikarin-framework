@@ -38,21 +38,62 @@ async function initializeApp() {
 
     console.log(`🎮 DEBUG: Project: "${data.slug}" | Group: "${data.group}"`);
 
-    // 1. Fetch Characters
+    // ---------------------------------------------------------
+    // 1. Fetch Characters & Sprites
+    // ---------------------------------------------------------
     let characterOptions = [];
+    let spriteOptions = [];
+
     try {
-        const response = await fetch('/api/library/characters');
-        if (!response.ok) throw new Error(`HTTP error! ${response.status}`);
-        const characters = await response.json();
+        // A. Fetch Characters
+        const charRes = await fetch('/api/library/characters');
+        if (!charRes.ok) throw new Error(`HTTP error! ${charRes.status}`);
+        const characters = await charRes.json();
+        
         characterOptions = characters.map(char => [char.name, char.id]);
+
+        // B. Fetch Assets for ALL characters
+        // We do this in parallel for speed
+        const assetPromises = characters.map(char => 
+            fetch(`/api/library/characters/${char.id}/assets`)
+                .then(r => r.ok ? r.json() : []) // Return empty array on error
+                .catch(err => [])
+        );
+
+        const allAssetsResults = await Promise.all(assetPromises);
+        
+        // C. Flatten and Deduplicate Sprites
+        // Example: If two chars have 'happy.png', we only show it once in the list
+        const spriteSet = new Set();
+        
+        allAssetsResults.forEach(assetList => {
+            assetList.forEach(file => {
+                // Filter only PNGs (or other image formats you use)
+                if (file.filename.toLowerCase().endsWith('.png')) {
+                    spriteSet.add(file.filename);
+                }
+            });
+        });
+
+        // Convert Set to Blockly Dropdown Format: [[Text, Value], [Text, Value]]
+        spriteOptions = Array.from(spriteSet).sort().map(filename => [filename, filename]);
+        
+        if (spriteOptions.length === 0) {
+            spriteOptions = [["default.png", "default.png"]];
+        }
+
     } catch (error) {
-        console.error("Failed to load character list:", error);
+        console.error("Failed to load library data:", error);
         characterOptions = [["Player", "player"], ["Error", "error"]];
+        spriteOptions = [["error.png", "error.png"]];
     }
 
+    // ---------------------------------------------------------
     // 2. Define Blocks
+    // ---------------------------------------------------------
     const allDefinitions = getAllBlockDefinitions({
-        characterOptions: characterOptions 
+        characterOptions: characterOptions,
+        spriteOptions: spriteOptions // <--- PASSING IT HERE
     });
 
     if (allDefinitions.length === 0) {
@@ -61,6 +102,7 @@ async function initializeApp() {
     
     Blockly.defineBlocksWithJsonArray(allDefinitions);
     registerGenerators(Blockly.Python);
+
 
     // 3. Inject Workspace
     const workspace = Blockly.inject('blocklyDiv', {

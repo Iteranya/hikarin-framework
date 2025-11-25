@@ -159,11 +159,9 @@ class VisualNovelModule:
     def show(self, character, sprite, nested=False):
         if isinstance(character, Character):
             # Check if sprite contains any whitespace
-            if re.search(r"[A-Z\s.,!?#@$*]", sprite):
-                raise ValueError("Sprite name cannot contain special characters, white space, or uppercase letters.")
             
-            location = "characters/" + character.id + "/" + character.outfit + "/" + sprite + ".png"
-            dyn_location = "characters/" + character.id + "/" + character.dyn_outfit + "/" + sprite + ".png"
+            location = "characters/" + character.id + "/" + character.outfit + "/" + sprite
+            dyn_location = "characters/" + character.id + "/" + character.dyn_outfit + "/" + sprite
             print("Compiling: " + sprite)
 
             result = {
@@ -188,10 +186,8 @@ class VisualNovelModule:
 
     def show_custom(self,character,sprite,wRatio,hRatio,wFrameRatio,hFrameRatio,colPos,rowPos,nested=False):
         if isinstance(character, Character): 
-            if re.search(r"[A-Z\s.,!?#@$*]", sprite):
-                raise ValueError("Sprite name cannot contain special characters, white space, or uppercase letters.")
-            location = "characters/" + character.id + "/" + character.outfit + "/" + sprite + ".png"
-            dyn_location = "characters/" + character.id + "/" + character.dyn_outfit + "/" + sprite + ".png"
+            location = "characters/" + character.id + "/" + character.outfit + "/" + sprite
+            dyn_location = "characters/" + character.id + "/" + character.dyn_outfit + "/" + sprite
             print("Compiling: "+sprite)
             result = {
                 "type":"show_sprite",
@@ -211,7 +207,7 @@ class VisualNovelModule:
                 self.dialogueDict.append(result)
             return result
         elif isinstance(character,str):
-            location = character+"/"+sprite+".png"
+            location = character+"/"+sprite
             print("Compiling: "+sprite)
             result = {
                 "type":"show_sprite",
@@ -234,11 +230,9 @@ class VisualNovelModule:
 
     def show_left(self,character,sprite,nested=False):
         if isinstance(character, Character): 
-            if re.search(r"[A-Z\s.,!?#@$*]", sprite):
-                raise ValueError("Sprite name cannot contain special characters, white space, or uppercase letters.")
   
-            location = "characters/" + character.id + "/" + character.outfit + "/" + sprite + ".png"
-            dyn_location = "characters/" + character.id + "/" + character.dyn_outfit + "/" + sprite + ".png"
+            location = "characters/" + character.id + "/" + character.outfit + "/" + sprite
+            dyn_location = "characters/" + character.id + "/" + character.dyn_outfit + "/" + sprite
             print("Compiling: "+sprite)
             result = {
                 "type":"show_sprite",
@@ -262,11 +256,9 @@ class VisualNovelModule:
 
     def show_right(self,character,sprite,nested=False):
         if isinstance(character, Character): 
-            if re.search(r"[A-Z\s.,!?#@$*]", sprite):
-                raise ValueError("Sprite name cannot contain special characters, white space, or uppercase letters.")
   
-            location = "characters/" + character.id + "/" + character.outfit + "/" + sprite + ".png"
-            dyn_location = "characters/" + character.id + "/" + character.dyn_outfit + "/" + sprite + ".png"
+            location = "characters/" + character.id + "/" + character.outfit + "/" + sprite
+            dyn_location = "characters/" + character.id + "/" + character.dyn_outfit + "/" + sprite
             print("Compiling: "+sprite)
             result = {
                 "type":"show_sprite",
@@ -290,7 +282,7 @@ class VisualNovelModule:
 
     def show_full(self,character,sprite,nested=False):
         if isinstance(character,str):
-            location = character+"/"+sprite+".png"
+            location = character+"/"+sprite
             print("Compiling: "+sprite)
             result = {
                 "type":"show_sprite",

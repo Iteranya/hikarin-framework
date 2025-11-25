@@ -1,48 +1,56 @@
-/**
- * @fileoverview Defines the 'vn_show' block.
- * This block displays a character sprite on the screen at a specified position.
- */
+// js/sprites/vn_show.js
 
-export const definition = {
-  "type": "vn_show",
-  "message0": "show character %1 with sprite %2 at %3",
-  "args0": [
-    {
-      "type": "field_input",
-      "name": "CHAR_VAR",
-      "text": "m"
-    },
-    {
-      "type": "field_input",
-      "name": "SPRITE_NAME",
-      "text": "happy"
-    },
-    {
-      "type": "field_dropdown",
-      "name": "POSITION",
-      "options": [
-        ["center", "show"],
-        ["left", "show_left"],
-        ["right", "show_right"]
-      ]
-    }
-  ],
-  "previousStatement": null,
-  "nextStatement": null,
-  "colour": 160,
-  "tooltip": "Shows a character's sprite on the screen at the center, left, or right position.",
-  "helpUrl": ""
+export const getDefinition = (spriteOptions) => {
+  const safeOptions = (spriteOptions && spriteOptions.length > 0) 
+      ? spriteOptions 
+      : [["no_sprites_found.png", "no_sprites_found.png"]];
+
+  return {
+    "type": "vn_show",
+    "message0": "show character %1 with sprite %2 at %3",
+    "args0": [
+      {
+        "type": "field_variable", // <--- CHANGED TO VARIABLE
+        "name": "CHAR_VAR",
+        "variable": "m"
+      },
+      {
+        "type": "field_dropdown",
+        "name": "SPRITE_NAME",
+        "options": safeOptions
+      },
+      {
+        "type": "field_dropdown",
+        "name": "POSITION",
+        "options": [
+          ["center", "show"],
+          ["left", "show_left"],
+          ["right", "show_right"]
+        ]
+      }
+    ],
+    "previousStatement": null,
+    "nextStatement": null,
+    "colour": 160,
+    "tooltip": "Shows a character's sprite on the screen.",
+    "helpUrl": ""
+  };
 };
 
 export const generator = (block) => {
-  const charVar = block.getFieldValue('CHAR_VAR');
-  const spriteName = Blockly.Python.quote_(block.getFieldValue('SPRITE_NAME'));
-  // The dropdown value directly corresponds to the Python function name.
+  // Get the variable name (e.g., "m")
+  const charVar = Blockly.Python.nameDB_.getName(
+      block.getFieldValue('CHAR_VAR'),
+      Blockly.Variables.NAME_TYPE
+  );
+
+  const spriteName = block.getFieldValue('SPRITE_NAME'); 
+  const quotedSprite = Blockly.Python.quote_(spriteName);
   const positionFunc = block.getFieldValue('POSITION');
-  if (Blockly.Python._inCondActions) {
-    return `vn.${positionFunc}(${charVar}, ${spriteName}, nested=True)\n`;
-  }else{
-    return `vn.${positionFunc}(${charVar}, ${spriteName})\n`;
-  }
   
+  if (Blockly.Python._inCondActions) {
+    return `vn.${positionFunc}(${charVar}, ${quotedSprite}, nested=True)\n`;
+  } else {
+    return `vn.${positionFunc}(${charVar}, ${quotedSprite})\n`;
+  }
 };

@@ -177,7 +177,9 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-400 mb-1 uppercase">Default Outfit</label>
-                                <input type="text" name="outfit" id="char-outfit" class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm focus:border-mob-500 outline-none" value="default">
+                                <input type="text" name="outfit" id="char-outfit"
+  class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm focus:border-mob-500 outline-none"
+  value="default" disabled>
                             </div>
                         </div>
                         <div class="mt-6 pt-4 border-t border-gray-700">
@@ -427,6 +429,9 @@
                 const data = Object.fromEntries(formData.entries());
                 data.tags = []; 
                 data.custom_data = {};
+                if (!data.id) {
+                    data.id = document.getElementById('char-id').value;
+                }
 
                 const res = await this.api('/library/characters', 'POST', data);
                 if (res) {
