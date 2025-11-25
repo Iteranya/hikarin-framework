@@ -1,121 +1,134 @@
-# Hikarin Visual Novel Framework
+# Hikarin: Your Story, Anywhere
 
-![WIP Badge](https://img.shields.io/badge/Status-Work_In_Progress-orange)
-![Python Badge](https://img.shields.io/badge/Backend-FastAPI-blue)
-![JS Badge](https://img.shields.io/badge/Frontend-Vanilla_JS-yellow)
-![License Badge](https://img.shields.io/badge/License-MIT-green)
+![Status: Work In Progress](https://img.shields.io/badge/Status-Work_In_Progress-orange)
+![License: Free for Everyone](https://img.shields.io/badge/License-AGPL--3-green)
 
-**Hikarin** is a truly platform-agnostic Visual Novel engine and SDK. Unlike traditional engines that compile to platform-specific executables, Hikarin compiles logic into a pure **JSON Finite State Machine (FSM)**.
+Ever dreamed of creating your own interactive story or visual novel, but felt intimidated by complex coding and game engines?
 
-This project was specifically architected to serve as the development kit for the revival of the legendary **Minecraft Mob Talker Mod**, allowing complex VN interactions to run directly inside Minecraft via a custom interpreter.
+**Hikarin is for you.** It’s a simple, powerful tool designed to help you write, build, and share your stories with the world. Instead of creating a clunky game file, Hikarin transforms your story into a single, universal file that can be played almost anywhere—in a web browser, inside other games, and even in Minecraft.
 
-## ✨ Key Features
-
-*   **True Platform Agnosticism:** Compiles story logic into portable JSON. If your target platform (game engine, web, Minecraft mod) can parse JSON, it can run your story.
-*   **Dual Scripting Interface:**
-    *   **Visual Editor:** Drag-and-drop logic construction powered by **Blockly**.
-    *   **Code Editor:** Generated Python code for power users who prefer typing.
-*   **Integrated Browser Preview:** Instantly playtest your scripts in the browser. No need to compile and load into Minecraft for quick checks and debugging.
-*   **Lightweight Tech Stack:** Built with **FastAPI** and **Vanilla JavaScript**. No Node.js, no NPM hell, and no build steps required for the frontend.
-*   **Asset Management:** Integrated asset browser for characters, backgrounds, and audio.
+This project was born from a single, passionate goal: to bring the legendary **Minecraft Mob Talker Mod** back to life, allowing rich, character-driven stories to unfold right inside the game.
 
 ---
 
-## 📸 Interface Gallery
+## 📸 A Glimpse Into Your Creative Studio
 
-### Visual Scripting (Blockly)
-Create complex dialogue flows and logic branches using an intuitive drag-and-drop interface.
-<img width="1919" height="895" alt="Screenshot 2025-11-25 133200" src="https://github.com/user-attachments/assets/e5cf730e-051d-42f6-acb5-e9e72f9e35f2" />
+### **Build Your Story with Visual Blocks**
+No coding? No problem! Drag and drop blocks to build your dialogue, create choices, and design complex story branches. It's as intuitive as putting together a puzzle.
+<img width="1919" height="895" alt="Visual scripting with blocks" src="https://github.com/user-attachments/assets/e5cf730e-051d-42f6-acb5-e9e72f9e35f2" />
 
-*(Script logic blocks translating to Python code)*
+### **Instantly Play and Test Your Story**
+With the click of a button, you can play through your creation right in your browser. See your characters, dialogue, and choices come to life instantly, making it easy to spot mistakes and perfect your narrative.
+<img width="1918" height="884" alt="Live preview of the visual novel" src="https://github.com/user-attachments/assets/bc5141c5-fb2b-424a-a153-b6753fb7e69c" />
 
-### Code Generation & Live Preview
-The **Play / Test** mode allows you to run and debug your story directly in the browser, while still seeing the generated Python code side-by-side.
-<img width="1918" height="884" alt="Screenshot 2025-11-25 133214" src="https://github.com/user-attachments/assets/bc5141c5-fb2b-424a-a153-b6753fb7e69c" />
+### **Keep Your Projects Organized**
+Manage all your stories, characters, and scripts from one clean and simple dashboard.
+<img width="1918" height="898" alt="Project management dashboard" src="https://github.com/user-attachments/assets/a6ae241c-c87e-45e0-b229-804d74b9b903" />
 
-
-### Project Management
-Manage multiple storylines, scripts, and export configurations from a centralized dashboard.
-<img width="1918" height="898" alt="Screenshot 2025-11-25 133101" src="https://github.com/user-attachments/assets/a6ae241c-c87e-45e0-b229-804d74b9b903" />
-
-
-### Asset & Character Editor
-Define characters, upload sprites, and manage metadata without touching a config file.
-<img width="1176" height="815" alt="Screenshot 2025-11-25 133346" src="https://github.com/user-attachments/assets/101b439d-8a85-477c-95a1-d64c220acf15" />
+### **Manage Your Characters and Art**
+Bring your characters to life in the character editor. Upload their portraits, add different expressions, and manage all your art assets like backgrounds and music in one place.
+<img width="1176" height="815" alt="Character and asset editor" src="https://github.com/user-attachments/assets/101b439d-8a85-477c-95a1-d64c220acf15" />
 
 ---
 
-## ⚙️ Development Workflow
+## ✨ Why You'll Love Hikarin
 
-Hikarin's SDK is designed for a fast, iterative workflow.
+*   **Create Once, Play Anywhere:** The magic of Hikarin is that it exports your entire visual novel as a single, portable `story.json` file. If a game or platform can read a simple text file, it can run your story. This means your creation isn't trapped in one place.
+*   **Write Your Way:**
+    *   **For the Visual Thinker:** Use the beautiful drag-and-drop editor to build your story visually.
+    *   **For the Power User:** If you're comfortable with code, you can switch to a text-based editor and write your logic in Python for maximum control.
+*   **See Your Story Come to Life Instantly:** No more waiting for your project to compile or load. The built-in preview lets you test your story in real-time, so you can focus on creating, not waiting.
+*   **Your All-in-One Studio:** Manage your characters, art, and sound effects from a simple, integrated library. No more digging through folders!
 
-1.  **Create:** Write your story using the Visual Editor or Python.
-2.  **Test:** Use the integrated preview window to instantly playtest and debug your script in the browser.
-3.  **Compile:** Export the final story as a portable `story.json` file.
-4.  **Deploy:** Load the JSON into the target environment (e.g., the Mob Talker Mod in Minecraft).
+---
 
-## 🛠️ Tech Stack
+## 🎨 Your Creative Journey
 
-*   **Backend:** Python 3.x (FastAPI)
-*   **Frontend:** HTML5, CSS3, Vanilla JavaScript (ES6+)
-*   **Visual Scripting:** Google Blockly
-*   **Output:** JSON FSM (Finite State Machine)
+With Hikarin, bringing your story to life is a simple, three-step process:
 
-## 🚀 Installation & Setup
+1.  **Dream & Build:** Write your script and design your story's flow using the visual editor. Add your characters, art, and music.
+2.  **Play & Perfect:** Use the instant preview to play through your story again and again, tweaking the dialogue and choices until it's just right.
+3.  **Share Your Masterpiece:** Export your finished story as a single file, ready to be shared on the web or loaded into another game.
 
-Since this project avoids heavy frontend bundlers, setup is standard for any Python developer.
+---
 
-1.  **Clone the Repository**
+## ⛏️ The Grand Vision: Bringing Stories to Minecraft
+
+The heart and soul of this project is the **Mob Talker Revival**. We believe that games like Minecraft are incredible sandboxes for storytelling. Hikarin is the key to unlocking that potential.
+
+Here’s how it works:
+1.  You create an amazing, interactive story in the easy-to-use Hikarin editor.
+2.  You export it as a universal `story.json` file.
+3.  Our upcoming Mob Talker mod for Minecraft reads that file, allowing players to interact with characters and experience your visual novel *directly inside the game*.
+
+---
+
+## 🚧 A Work in Progress: Join Our Journey!
+
+Hikarin is currently under active development and growing every day. We're passionate about making it the best tool for creators, but we're not quite finished yet.
+
+*   [x] Visual Story Editor (It works!)
+*   [x] Instant In-Browser Preview
+*   [x] Character & Asset Management
+*   [x] Exporting to a Universal Story File
+*   [ ] Full documentation for storytellers
+*   [ ] Adding sound and music triggers
+
+---
+
+## 🚀 Getting Started
+
+Right now, getting Hikarin running is a little technical, but we're working hard on a simple, one-click installer for the future!
+
+If you're feeling adventurous and want to try it today, you can follow the steps below.
+
+<details>
+<summary><b>For the Technically Adventurous (Click to Expand)</b></summary>
+
+1.  **Download the project files:** You can get them by cloning the repository with Git:
     ```bash
     git clone https://github.com/yourusername/hikarin-vn-framework.git
     cd hikarin-vn-framework
     ```
 
-2.  **Create a Virtual Environment**
+2.  **Set up a virtual environment** (this keeps the installation clean):
     ```bash
-    # Windows
+    # On Windows
     python -m venv venv
     .\venv\Scripts\activate
 
-    # Linux/MacOS
+    # On Linux/MacOS
     python3 -m venv venv
     source venv/bin/activate
     ```
 
-3.  **Install Requirements**
+3.  **Install the necessary components:**
     ```bash
     pip install -r requirements.txt
     ```
 
-4.  **Run the SDK**
+4.  **Run the editor!**
     ```bash
     python main.py
     ```
-    *Access the editor at `http://127.0.0.1:8000` (or whichever port is defined).*
+    You can now access the Hikarin editor in your web browser at `http://127.0.0.1:8000`.
+</details>
 
-## ⛏️ The Minecraft Connection (Mob Talker)
+---
 
-The primary driver for Hikarin is the **Mob Talker Revival**. Running a VN engine inside a Java-based game environment like Minecraft is difficult.
+## 🤝 We Need You!
 
-Hikarin solves this by decoupling the **Logic** from the **Runner**.
-1.  You write and test the story in Hikarin SDK.
-2.  Hikarin compiles it to a `story.json`.
-3.  The Minecraft Mod reads the JSON and moves the state machine forward based on player interaction.
+You don't need to be a programmer to help build the future of Hikarin! We're looking for passionate creators of all kinds:
 
-## 🚧 Status
+*   **Writers & Storytellers:** Try out the editor and give us feedback! Does it feel intuitive? What features would make your life easier?
+*   **Artists:** Help us design a beautiful user interface or create sample assets for new users.
+*   **Testers:** Play with the tool and help us find bugs or confusing parts.
+*   **Dreamers:** Share your ideas for what Hikarin could become!
 
-This project is currently a **Work In Progress (WIP)**.
-- [x] Visual Scripting (Blockly Integration)
-- [x] In-browser script preview
-- [x] Asset Management
-- [x] JSON Compilation
-- [ ] Full FSM Spec documentation
-- [ ] Audio event triggers
+If you have feedback or ideas, please open an issue on our GitHub page. We'd love to hear from you!
 
-## 🤝 Contributing
-
-Contributions are welcome! Since we are using Vanilla JS, please ensure your frontend PRs do not introduce build tools (Webpack/Vite) unless absolutely necessary for a new architecture.
+---
 
 ## 📄 License
 
-[MIT License](LICENSE)
+Hikarin is licensed under **AGPL-3.0**. This means it will always be **free and open** for the community to use, share, and improve upon. Our goal is to empower creators, not to lock them in.
