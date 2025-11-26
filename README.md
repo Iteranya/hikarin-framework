@@ -15,11 +15,11 @@ This project was born from a single, passionate goal: to bring the legendary **M
 
 ### **Build Your Story with Visual Blocks**
 No coding? No problem! Drag and drop blocks to build your dialogue, create choices, and design complex story branches. It's as intuitive as putting together a puzzle.
-<img width="1919" height="895" alt="Visual scripting with blocks" src="https://github.com/user-attachments/assets/e5cf730e-051d-42f6-acb5-e9e72f9e35f2" />
+<img width="1919" height="908" alt="Screenshot 2025-11-26 120625" src="https://github.com/user-attachments/assets/6695bec1-51e2-455e-afae-16d99bb0505e" />
 
 ### **Instantly Play and Test Your Story**
 With the click of a button, you can play through your creation right in your browser. See your characters, dialogue, and choices come to life instantly, making it easy to spot mistakes and perfect your narrative.
-<img width="1918" height="884" alt="Live preview of the visual novel" src="https://github.com/user-attachments/assets/bc5141c5-fb2b-424a-a153-b6753fb7e69c" />
+<img width="1919" height="910" alt="Screenshot 2025-11-26 120635" src="https://github.com/user-attachments/assets/07c06d9c-94de-41b3-a172-593a421f18cd" />
 
 ### **Keep Your Projects Organized**
 Manage all your stories, characters, and scripts from one clean and simple dashboard.
@@ -27,7 +27,8 @@ Manage all your stories, characters, and scripts from one clean and simple dashb
 
 ### **Manage Your Characters and Art**
 Bring your characters to life in the character editor. Upload their portraits, add different expressions, and manage all your art assets like backgrounds and music in one place.
-<img width="1176" height="815" alt="Character and asset editor" src="https://github.com/user-attachments/assets/101b439d-8a85-477c-95a1-d64c220acf15" />
+<img width="1177" height="830" alt="image" src="https://github.com/user-attachments/assets/134e12b9-d3b1-471f-8ac1-543bcc6c79e0" />
+
 
 ---
 
