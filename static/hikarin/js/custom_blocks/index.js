@@ -10,6 +10,7 @@ import * as vn_show from './sprites/vn_show.js';
 import * as vn_remove from './sprites/vn_remove.js';
 import * as vn_remove_sprite from './sprites/vn_remove_sprite.js';
 import * as vn_show_custom from './sprites/vn_show_custom.js';
+import * as vn_show_full from './sprites/vn_show_full.js';
 import * as vn_set_variable from './variables/vn_set_variable.js';
 import * as vn_modify_variable from './variables/vn_modify_variable.js';
 import * as vn_choice from './choices/vn_choice.js';
@@ -41,6 +42,7 @@ const allBlockModules = [
   vn_remove,
   vn_remove_sprite,
   vn_show_custom,
+  vn_show_full,
 
   // Category 4
   vn_set_variable,

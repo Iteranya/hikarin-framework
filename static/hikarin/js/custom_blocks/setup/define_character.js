@@ -20,25 +20,23 @@ function sanitizeVariableName(text) {
  */
 const EXTENSION_NAME = 'ensure_char_variable_exists';
 
-// We wrap this in a check so we don't crash if we reload the script
 if (!Blockly.Extensions.isRegistered(EXTENSION_NAME)) {
   Blockly.Extensions.register(EXTENSION_NAME, function() {
-    // This runs whenever the block changes (dragged, modified, loaded)
     this.setOnChange(function(changeEvent) {
       if (!this.workspace || this.isInFlyout) return;
 
-      // 1. Get the Character ID currently selected in the dropdown
       const charId = this.getFieldValue('CHAR_ID');
       if (!charId || charId === 'error') return;
 
-      // 2. Convert ID to a safe variable name (e.g. "student_council" -> "student_council")
       const varName = sanitizeVariableName(charId);
 
-      // 3. Check if this variable exists in the workspace. If not, create it!
-      const existingVar = this.workspace.getVariable(varName);
+      // FIX: Check for variable of specific type 'Character'
+      const existingVar = this.workspace.getVariable(varName, 'Character');
+      
       if (!existingVar) {
-        this.workspace.createVariable(varName);
-        console.log(`✨ Auto-created variable: ${varName}`);
+        // FIX: Create variable with type 'Character'
+        this.workspace.createVariable(varName, 'Character');
+        console.log(`✨ Auto-created typed variable: ${varName}`);
       }
     });
   });
@@ -51,7 +49,7 @@ export function createDefinition(characterOptions) {
 
   return {
     "type": "define_character",
-    "message0": "initialize character %1", // Simplified text
+    "message0": "initialize character %1",
     "args0": [
       {
         "type": "field_dropdown",
@@ -59,12 +57,11 @@ export function createDefinition(characterOptions) {
         "options": options 
       }
     ],
-    // ADD THE EXTENSION HERE
     "extensions": [EXTENSION_NAME],
     "previousStatement": null,
     "nextStatement": null,
     "colour": 230,
-    "tooltip": "Initializes a character. A variable with the character's name will be created automatically.",
+    "tooltip": "Initializes a character.",
     "helpUrl": ""
   };
 }

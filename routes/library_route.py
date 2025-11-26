@@ -137,6 +137,41 @@ async def upload_character_asset(
         "subfolder": "default"
     }
 
+@router.get("/sprite-map", response_model=Dict[str, List[str]])
+def get_all_character_sprites_map():
+    """
+    Efficiently scans ALL characters and returns a map of their sprites.
+    Used by the frontend to populate dropdowns without N+1 requests.
+    
+    Returns:
+    {
+        "monika": ["happy.png", "sad.png"],
+        "sans": ["blue_eye.png"]
+    }
+    """
+    sprite_map = {}
+
+    # Iterate over every character folder in library/characters
+    for char_folder in CHAR_DIR.iterdir():
+        if char_folder.is_dir():
+            char_id = char_folder.name
+            
+            # Target the 'default' subdirectory where sprites live
+            assets_path = char_folder / "default"
+            
+            sprites = []
+            
+            if assets_path.exists():
+                for f in assets_path.iterdir():
+                    # Filter for valid image types (primarily PNG)
+                    if f.is_file() and f.suffix.lower() in ['.png', '.jpg', '.jpeg', '.webp']:
+                        sprites.append(f.name)
+            
+            # Sort them so they look nice in the dropdown
+            sprite_map[char_id] = sorted(sprites)
+
+    return sprite_map
+
 # ==========================================
 # 3. GLOBAL ASSETS (Audio/Backgrounds)
 # ==========================================

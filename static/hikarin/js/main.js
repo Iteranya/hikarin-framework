@@ -7,34 +7,30 @@ import { getAllBlockDefinitions, registerGenerators } from './custom_blocks/inde
 
 console.log("🚀 DEBUG: Main.js loaded");
 
-/**
- * Retrieves project AND group from the hidden DOM element.
- * Expects: <div id="project-data" data-slug="..." data-group="..."></div>
- */
 function getProjectData() {
-    // Note: Ensure your HTML ID matches this (project-data vs slug-container)
-    // Based on our previous step, we used "project-data"
     const container = document.getElementById('project-data'); 
-    
     if (!container) {
         console.error("⛔ CRITICAL: DOM Element #project-data not found!");
         return null;
     }
-
     return {
         slug: container.dataset.slug,
         group: container.dataset.group
     };
 }
 
+// Ensure this matches define_character.js exactly
+function sanitizeVariableName(text) {
+  let clean = text.replace(/[^a-zA-Z0-9_]/g, '_');
+  if (/^[0-9]/.test(clean)) {
+    clean = 'char_' + clean;
+  }
+  return clean.toLowerCase();
+}
+
 async function initializeApp() {
     const data = getProjectData();
-    
-    if (!data || !data.slug || !data.group) {
-        alert("Fatal Error: Missing Project or Group Data. Check console.");
-        console.error("Missing Data:", data);
-        return;
-    }
+    if (!data) return;
 
     console.log(`🎮 DEBUG: Project: "${data.slug}" | Group: "${data.group}"`);
 
@@ -42,67 +38,51 @@ async function initializeApp() {
     // 1. Fetch Characters & Sprites
     // ---------------------------------------------------------
     let characterOptions = [];
-    let spriteOptions = [];
+    let spriteMap = {};
 
     try {
-        // A. Fetch Characters
+        console.log("🔄 Fetching characters...");
         const charRes = await fetch('/api/library/characters');
-        if (!charRes.ok) throw new Error(`HTTP error! ${charRes.status}`);
         const characters = await charRes.json();
-        
         characterOptions = characters.map(char => [char.name, char.id]);
 
-        // B. Fetch Assets for ALL characters
-        // We do this in parallel for speed
-        const assetPromises = characters.map(char => 
-            fetch(`/api/library/characters/${char.id}/assets`)
-                .then(r => r.ok ? r.json() : []) // Return empty array on error
-                .catch(err => [])
-        );
+        console.log("🔄 Fetching sprite map...");
+        const mapRes = await fetch('/api/library/sprite-map'); 
+        const rawMap = await mapRes.json(); 
 
-        const allAssetsResults = await Promise.all(assetPromises);
-        
-        // C. Flatten and Deduplicate Sprites
-        // Example: If two chars have 'happy.png', we only show it once in the list
-        const spriteSet = new Set();
-        
-        allAssetsResults.forEach(assetList => {
-            assetList.forEach(file => {
-                // Filter only PNGs (or other image formats you use)
-                if (file.filename.toLowerCase().endsWith('.png')) {
-                    spriteSet.add(file.filename);
-                }
-            });
+        // Process the map
+        Object.keys(rawMap).forEach(charId => {
+            const varName = sanitizeVariableName(charId);
+            const sprites = rawMap[charId];
+            
+            // Log for debugging
+            console.log(`🔹 Map Entry: ID="${charId}" -> Var="${varName}" | Sprites: ${sprites.length}`);
+
+            if (sprites.length > 0) {
+                spriteMap[varName] = sprites.map(s => [s, s]);
+            } else {
+                // If backend returns empty list, ensure we don't crash but show fallback later
+                spriteMap[varName] = []; 
+            }
         });
 
-        // Convert Set to Blockly Dropdown Format: [[Text, Value], [Text, Value]]
-        spriteOptions = Array.from(spriteSet).sort().map(filename => [filename, filename]);
-        
-        if (spriteOptions.length === 0) {
-            spriteOptions = [["default.png", "default.png"]];
-        }
+        console.log("✅ Final Sprite Map Keys:", Object.keys(spriteMap));
 
     } catch (error) {
-        console.error("Failed to load library data:", error);
-        characterOptions = [["Player", "player"], ["Error", "error"]];
-        spriteOptions = [["error.png", "error.png"]];
+        console.error("⛔ Failed to load library data:", error);
     }
 
     // ---------------------------------------------------------
     // 2. Define Blocks
     // ---------------------------------------------------------
+    // IMPORTANT: We pass 'spriteMap' into 'spriteOptions'
     const allDefinitions = getAllBlockDefinitions({
         characterOptions: characterOptions,
-        spriteOptions: spriteOptions // <--- PASSING IT HERE
+        spriteOptions: spriteMap 
     });
 
-    if (allDefinitions.length === 0) {
-        console.error("⛔ CRITICAL ERROR: No block definitions found!");
-    }
-    
     Blockly.defineBlocksWithJsonArray(allDefinitions);
     registerGenerators(Blockly.Python);
-
 
     // 3. Inject Workspace
     const workspace = Blockly.inject('blocklyDiv', {
@@ -116,27 +96,21 @@ async function initializeApp() {
 
     // 4. Initialize Managers
     const editor = new EditorManager(workspace, data.slug, data.group);
-    
     const fileManager = new FileManager(data.slug, data.group, editor, workspace);
-    
 
     window.editor = editor;
     window.fileManager = fileManager;
 
-    // 5. Setup Auto-Save Listener
+    // 5. Setup Auto-Save
     let saveTimeout;
     workspace.addChangeListener((e) => {
         if (e.type === Blockly.Events.UI || e.type === Blockly.Events.VIEWPORT_CHANGE) return;
         
         editor.generateCode(); 
-        
         clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(() => {
-            fileManager.saveCurrentFile();
-        }, 2000); 
+        saveTimeout = setTimeout(() => fileManager.saveCurrentFile(), 2000); 
     });
 
-    // 6. Start
     await fileManager.init();
 }
 
