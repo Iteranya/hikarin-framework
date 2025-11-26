@@ -35,7 +35,7 @@ export const generator = (block) => {
   const dialogue = Blockly.Python.quote_(block.getFieldValue('DIALOGUE'));
   const voice = Blockly.Python.quote_(block.getFieldValue('VOICE_FILE'));
   if (Blockly.Python._inCondActions) {
-    return `vn.speak(${charVar}, ${dialogue}, voice=${voice},nested=True)\n`;
+    return `vn.speak(${charVar}, ${dialogue}, voice=${voice},nested=True),\n`;
   }else{
     return `vn.speak(${charVar}, ${dialogue}, voice=${voice})\n`;
   }

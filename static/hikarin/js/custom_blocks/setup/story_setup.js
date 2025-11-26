@@ -51,7 +51,7 @@ def story():
   vn = VisualNovelModule()
 
 ${setupCode}
-
+  vn.start()
 ${storyCode}
 
   return vn.dialogueDict

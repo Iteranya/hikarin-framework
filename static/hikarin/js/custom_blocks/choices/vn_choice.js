@@ -36,7 +36,7 @@ export const generator = (block) => {
 
   // 4. Handle your nesting logic
   if (Blockly.Python._inCondActions) {
-    return `vn.choice(${dictStr}, nested=True)\n`;
+    return `vn.choice(${dictStr}, nested=True),\n`;
   } else {
     return `vn.choice(${dictStr})\n`;
   }

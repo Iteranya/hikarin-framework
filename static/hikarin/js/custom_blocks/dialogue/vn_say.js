@@ -231,7 +231,7 @@ export const generator = (block) => {
 
   const inCond = Blockly.Python && Blockly.Python._inCondActions;
   if (inCond) {
-    return `vn.say(${charVar}, ${dialogue}, nested=True)\n`;
+    return `vn.say(${charVar}, ${dialogue}, nested=True),\n`;
   } else {
     return `vn.say(${charVar}, ${dialogue})\n`;
   }

@@ -99,7 +99,7 @@ export const generator = (block) => {
   const positionFunc = block.getFieldValue('POSITION');
   
   if (Blockly.Python._inCondActions) {
-    return `vn.${positionFunc}(${charVar}, ${quotedSprite}, nested=True)\n`;
+    return `vn.${positionFunc}(${charVar}, ${quotedSprite}, nested=True),\n`;
   } else {
     return `vn.${positionFunc}(${charVar}, ${quotedSprite})\n`;
   }

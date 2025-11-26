@@ -1,8 +1,10 @@
 import * as story_setup from './setup/story_setup.js';
 import * as define_character from './setup/define_character.js';
+import * as vn_scene_setup from './setup/vn_scene_setup.js';
 import * as vn_label from './flow/vn_label.js';
 import * as vn_jump from './flow/vn_jump.js';
 import * as vn_finish from './flow/vn_finish.js';
+import * as vn_next from './flow/vn_next.js';
 import * as vn_say from './dialogue/vn_say.js';
 import * as vn_speak from './dialogue/vn_speak.js';
 import * as vn_sound_effect from './dialogue/vn_sfx.js';
@@ -26,11 +28,13 @@ import * as vn_unlock_dialogue from './special/vn_unlock_dialogue.js';
 const allBlockModules = [
   story_setup,
   define_character,
+  vn_scene_setup,
   
   // Category 1
   vn_label,
   vn_jump,
   vn_finish,
+  vn_next,
 
   // Category 2
   vn_say,

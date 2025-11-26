@@ -522,8 +522,9 @@ class VisualNovelModule:
         result = {
             "type":"conditional",
             "action":"conditional",
-            "var": "Nyaaa~",
-            "condition": "night",
+            "var": "isNight",
+            "condition": "equal",
+            "value":True,
             "actions":actions
         }
         self.dialogueDict.append(result)
@@ -534,8 +535,9 @@ class VisualNovelModule:
         result = {
             "type":"conditional",
             "action":"conditional",
-            "var": "Nyaaa~",
-            "condition": "day",
+            "var": "isDay",
+            "condition": "equal",
+            "value":True,
             "actions":actions
         }
         self.dialogueDict.append(result)

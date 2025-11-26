@@ -4,8 +4,8 @@
  */
 
 export const definition = {
-  "type": "vn_label",
-  "message0": "label: %1",
+  "type": "vn_next",
+  "message0": "next: %1",
   "args0": [
     {
       "type": "field_input",
@@ -16,7 +16,7 @@ export const definition = {
   "previousStatement": null,
   "nextStatement": null,
   "colour": 45,
-  "tooltip": "Creates a named location in the script that you can jump to.",
+  "tooltip": "Creates a checkpoint or  autosave.",
   "helpUrl": ""
 };
 
@@ -25,9 +25,9 @@ export const generator = (block) => {
   // Ensure the label name is a valid identifier (basic sanitation)
   const safeLabelName = labelName.replace(/[^A-Za-z0-9_]/g, '');
   if (Blockly.Python._inCondActions) {
-    return `vn.label("${safeLabelName}",nested=True),\n`;
+    return `vn.next("${safeLabelName}",nested=True),\n`;
   }else{
-    return `vn.label("${safeLabelName}")\n`;
+    return `vn.next("${safeLabelName}")\n`;
   }
   
 };

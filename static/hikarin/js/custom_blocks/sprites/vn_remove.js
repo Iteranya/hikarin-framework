@@ -23,7 +23,7 @@ export const definition = {
 export const generator = (block) => {
   const charVar = block.getFieldValue('CHAR_VAR');
   if (Blockly.Python._inCondActions) {
-return `vn.remove(${charVar},nested=True)\n`;
+return `vn.remove(${charVar},nested=True),\n`;
   }else{
 return `vn.remove(${charVar})\n`;
   }

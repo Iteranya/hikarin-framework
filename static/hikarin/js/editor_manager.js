@@ -1,48 +1,56 @@
-// static/hikarin/js/editor_manager.js
+import { GameRunner } from './player/game_runner.js';
+import { PlayerSidebar } from './player/player_sidebar.js';
 
 export class EditorManager {
     constructor(workspace, projectSlug, groupSlug) {
         this.workspace = workspace;
-        this.projectSlug = projectSlug;
-        this.groupSlug = groupSlug;
+        
+        // Initialize the Logic Handler
+        this.gameRunner = new GameRunner(projectSlug, groupSlug, () => {
+            this.setView('visual');
+        });
+
+        // Initialize Player Sidebar
+        this.playerSidebar = new PlayerSidebar(this.gameRunner); 
         
         // State
-        this.isSidebarOpen = false;
-        this.currentView = 'visual'; // 'visual' or 'play'
-        this.vnEngine = null;        // Holds the HikarinVN instance
+        this.isCodeSidebarOpen = false; // Renamed for clarity
+        this.currentView = 'visual'; 
+
+        // DOM Cache
+        this.dom = {
+            visualTab: document.getElementById('tab-visual'),
+            playTab: document.getElementById('tab-play'),
+            blocklyDiv: document.getElementById('blocklyDiv'),
+            gameView: document.getElementById('gamePlayerView'),
+            codeSidebar: document.getElementById('pythonSidebar'), // Renamed key for clarity
+            
+            // Buttons
+            btnCodeSidebar: document.getElementById('btn-code-sidebar'),
+            btnPlayerSidebar: document.getElementById('btn-player-sidebar')
+        };
         
-        // Initialize
         this.initListeners();
-        
-        // Slight delay to ensure DOM is ready for SVG resizing
         setTimeout(() => this.resize(), 100);
     }
 
     // --- Initialization & Layout ---
 
     initListeners() {
-        if (!this.workspace) {
-            console.error("EditorManager ERROR: Workspace not provided!");
-            return;
-        }
+        if (!this.workspace) return;
         window.addEventListener('resize', () => this.resize());
     }
 
     resize() {
-        // Required by Blockly when the parent container changes size
-        Blockly.svgResize(this.workspace);
+        if (this.currentView === 'visual') {
+            Blockly.svgResize(this.workspace);
+        }
     }
 
-    // --- Toolbar Actions (Undo/Redo/Zoom) ---
+    // --- Toolbar Actions ---
 
-    undo() { 
-        this.workspace.undo(false); 
-    }
-    
-    redo() { 
-        this.workspace.undo(true); 
-    }
-
+    undo() { this.workspace.undo(false); }
+    redo() { this.workspace.undo(true); }
     zoom(dir) {
         if (dir === 0) {
             this.workspace.setScale(1);
@@ -53,34 +61,24 @@ export class EditorManager {
         }
     }
 
-    // --- Code Sidebar (The Python Preview) ---
+    // --- Code Sidebar (Visual Mode) ---
 
     toggleCodeSidebar() {
-        const sidebar = document.getElementById('pythonSidebar');
-        const btn = document.getElementById('btn-code-sidebar');
+        const btn = this.dom.btnCodeSidebar;
+        this.isCodeSidebarOpen = !this.isCodeSidebarOpen;
 
-        this.isSidebarOpen = !this.isSidebarOpen;
-
-        if (this.isSidebarOpen) {
-            sidebar.classList.remove('hidden');
-            sidebar.classList.add('flex');
-            
-            // Visual feedback on button
+        if (this.isCodeSidebarOpen) {
+            this.dom.codeSidebar.classList.remove('hidden');
+            this.dom.codeSidebar.classList.add('flex');
             btn.classList.add('bg-mob-600', 'text-white');
             btn.classList.remove('bg-gray-700');
-            
-            // Generate code immediately so it isn't empty
             this.generateCode();
         } else {
-            sidebar.classList.add('hidden');
-            sidebar.classList.remove('flex');
-            
-            // Revert button
+            this.dom.codeSidebar.classList.add('hidden');
+            this.dom.codeSidebar.classList.remove('flex');
             btn.classList.remove('bg-mob-600', 'text-white');
             btn.classList.add('bg-gray-700');
         }
-        
-        // Resizing is crucial because the available width for Blockly changed
         this.resize();
     }
 
@@ -95,173 +93,77 @@ export class EditorManager {
     }
 
     copyCode() {
-        const el = document.getElementById('generatedCode');
-        el.select();
+        document.getElementById('generatedCode').select();
         document.execCommand('copy');
     }
 
-    // --- View Switching (Visual vs Play) ---
+    // --- Player Sidebar (Play Mode) ---
 
-    // --- View Switching (Visual vs Play) ---
+    togglePlayerSidebar() {
+        // Delegate to the new class
+        this.playerSidebar.toggle();
+    }
+
+    // --- View Switching ---
 
     async setView(view) {
-        // Prevent clicking the active tab
         if (this.currentView === view) return;
         
         this.currentView = view;
-        
-        // DOM Elements
-        const visualTab = document.getElementById('tab-visual');
-        const playTab = document.getElementById('tab-play');
-        const blocklyDiv = document.getElementById('blocklyDiv');
-        const gameView = document.getElementById('gamePlayerView');
-        const sidebar = document.getElementById('pythonSidebar');
+        this.updateViewUI(view);
+    }
+
+    updateViewUI(view) {
+        const { visualTab, playTab, blocklyDiv, gameView, codeSidebar, btnCodeSidebar } = this.dom;
 
         if (view === 'visual') {
-            // --- Switch to VISUAL EDITOR ---
-            
-            // 1. Update Tabs
-            visualTab.classList.add('active', 'text-white');
-            visualTab.classList.remove('text-gray-400');
-            playTab.classList.remove('active', 'text-white');
-            playTab.classList.add('text-gray-400');
+            // 1. Activate Visual Tab
+            visualTab.classList.replace('text-gray-400', 'text-white');
+            visualTab.classList.add('active');
+            playTab.classList.replace('text-white', 'text-gray-400');
+            playTab.classList.remove('active');
 
-            // 2. Hide Game, Show Blockly
+            // 2. Show Canvas, Hide Game
             gameView.classList.add('hidden');
             gameView.classList.remove('flex');
-            
-            // !!! FIX: Remove hidden class instead of changing visibility
             blocklyDiv.classList.remove('hidden');
-            blocklyDiv.style.display = 'block'; // Force block display just in case
+            blocklyDiv.style.display = 'block';
 
-            // 3. Restore Sidebar (if needed)
-            if (this.isSidebarOpen) {
-                sidebar.classList.remove('hidden');
+            // 3. UI TOOLS: Show Code Button, Hide Player Button
+            btnCodeSidebar.classList.remove('hidden');
+            this.playerSidebar.hideButton();
+
+            // 4. SIDEBARS: Restore Code Sidebar if was open, Force Hide Player Sidebar
+            this.playerSidebar.close(); // Visually hide player sidebar
+            if (this.isCodeSidebarOpen) {
+                codeSidebar.classList.remove('hidden');
+                codeSidebar.classList.add('flex');
             }
-
-            // 4. Clean up Engine
-            if (this.vnEngine) {
-                this.vnEngine = null;
-                document.getElementById('vn-container').innerHTML = '';
-            }
-
-            // !!! CRITICAL: Blockly needs to recalculate size now that it is visible again
-            this.resize();
 
         } else {
-            // --- Switch to GAME PLAYER ---
-            
-            // 1. Update Tabs
-            playTab.classList.add('active', 'text-white');
-            playTab.classList.remove('text-gray-400');
-            visualTab.classList.remove('active', 'text-white');
-            visualTab.classList.add('text-gray-400');
+            // 1. Activate Play Tab
+            playTab.classList.replace('text-gray-400', 'text-white');
+            playTab.classList.add('active');
+            visualTab.classList.replace('text-white', 'text-gray-400');
+            visualTab.classList.remove('active');
 
-            // 2. Hide Blockly, Show Game
-            // !!! FIX: Add hidden class to fully remove Blockly from layout flow
+            // 2. Hide Canvas, Show Game
             blocklyDiv.classList.add('hidden');
-            blocklyDiv.style.display = 'none'; // Force none
-
+            blocklyDiv.style.display = 'none';
             gameView.classList.remove('hidden');
             gameView.classList.add('flex');
             
-            // 3. Hide Sidebar
-            sidebar.classList.add('hidden'); 
+            // 3. UI TOOLS: Hide Code Button, Show Player Button
+            btnCodeSidebar.classList.add('hidden');
+            this.playerSidebar.showButton();
 
-            // 4. Run Game
-            await this.runGame();
-        }
-    }
+            // 4. SIDEBARS: Force Hide Code Sidebar, Restore Player Sidebar if open
+            codeSidebar.classList.add('hidden'); // Always hide code in game mode
+            codeSidebar.classList.remove('flex');
 
-    // --- Game Logic ---
-
-    async runGame() {
-        const loader = document.getElementById('game-loader');
-        const container = document.getElementById('vn-container');
-        
-        // Show Loader
-        loader.classList.remove('hidden');
-        
-        try {
-            // 1. Force Auto-Save
-            // We need to make sure the latest blocks are saved to disk on the server
-            // because the compiler reads from the .py files, not the browser memory.
-            if (window.fileManager) {
-                await window.fileManager.saveCurrentFile();
+            if (this.playerSidebar.isOpen) {
+                this.playerSidebar.renderState(); // Restore visibility
             }
-
-            // 2. Call the Compile Endpoint
-            const res = await fetch(`/api/projects/${this.projectSlug}/compile_temp/${this.groupSlug}`, {
-                method: 'POST'
-            });
-
-            if (!res.ok) throw new Error(`API Error: ${res.status}`);
-            
-            const responseJson = await res.json();
-
-            // 3. Handle Compilation Errors (Syntax errors in Python)
-            if (responseJson.status === 'error') {
-                container.innerHTML = `
-                    <div class="h-full flex items-center justify-center">
-                        <div class="bg-dark-800 p-6 rounded border border-red-500/50 max-w-lg shadow-2xl">
-                            <h3 class="text-red-500 font-bold mb-2 flex items-center gap-2">
-                                <i class="fa-solid fa-bug"></i> Compilation Failed
-                            </h3>
-                            <p class="text-gray-300 text-sm mb-4 font-mono bg-black/30 p-2 rounded">${responseJson.message}</p>
-                            <div class="flex justify-between items-center mt-4">
-                                <span class="text-xs text-red-300 font-mono">File: ${responseJson.file}</span>
-                                <button onclick="editor.setView('visual')" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded transition">
-                                    Fix in Editor
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                return;
-            }
-
-            // 4. Initialize HikarinVN Engine
-            container.innerHTML = ''; // Clear previous instance
-
-            if (window.HikarinVN) {
-                console.log("🎮 Starting HikarinVN Engine...");
-                console.log("📂 Asset Path: /media/");
-                
-                // Initialize
-                this.vnEngine = new window.HikarinVN('vn-container', responseJson.data, {
-                    assetsPath: "/media/", // Points to your FastAPI static mount
-                    debug: true,           // Enables the bottom debug panel
-                    globals: {}            // Initial save data (empty for now)
-                });
-
-                // Start
-                this.vnEngine.start();
-                
-            } else {
-                container.innerHTML = `
-                    <div class="h-full flex items-center justify-center text-center">
-                        <div>
-                            <p class="text-red-500 font-bold mb-2">Engine Not Loaded</p>
-                            <p class="text-gray-500 text-xs">Could not find 'HikarinVN' on window object.<br>Check your internet connection or script tags.</p>
-                        </div>
-                    </div>
-                `;
-            }
-
-        } catch (e) {
-            console.error("Game Launch Critical Error:", e);
-            container.innerHTML = `
-                <div class="h-full flex items-center justify-center">
-                    <div class="text-red-500 bg-dark-950 p-4 border border-red-900 rounded">
-                        <strong>System Error:</strong> ${e.message}
-                    </div>
-                </div>
-            `;
-        } finally {
-            // Hide Loader with a tiny delay for smoothness
-            setTimeout(() => {
-                loader.classList.add('hidden');
-            }, 300);
         }
     }
 }

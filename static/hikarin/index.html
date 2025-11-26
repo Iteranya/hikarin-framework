@@ -147,28 +147,34 @@
 
             <main class="flex-1 flex flex-col bg-dark-900 relative min-w-0">
         <!-- TOOLBAR -->
-        <header class="h-10 bg-dark-800 border-b border-gray-800 flex items-center justify-between px-4 flex-shrink-0 select-none">
-            <div class="flex h-full">
-                <!-- TAB 1: VISUAL -->
-                <button onclick="editor.setView('visual')" id="tab-visual" class="editor-tab active h-full px-4 text-xs font-medium flex items-center gap-2 border-r border-gray-800 transition">
-                    <i class="fa-solid fa-puzzle-piece"></i> Visual
-                </button>
-                <!-- TAB 2: PLAY (Replaces Source) -->
-                <button onclick="editor.setView('play')" id="tab-play" class="editor-tab h-full px-4 text-xs font-medium text-gray-400 hover:text-white hover:bg-dark-700 flex items-center gap-2 border-r border-gray-800 transition">
-                    <i class="fa-solid fa-gamepad"></i> Play / Test
-                </button>
-            </div>
-            
-            <div id="lbl-current-file" class="text-xs text-gray-500 font-mono hidden md:block">
-               No File Selected
-            </div>
-            
-            <div class="flex items-center gap-3">
-                <button onclick="editor.toggleCodeSidebar()" id="btn-code-sidebar" class="text-xs bg-gray-700 hover:bg-mob-600 text-white px-3 py-1 rounded transition flex items-center gap-2">
-                    <i class="fa-brands fa-python"></i> <span class="hidden sm:inline">Show Code</span>
-                </button>
-            </div>
-        </header>
+            <header class="h-10 bg-dark-800 border-b border-gray-800 flex items-center justify-between px-4 flex-shrink-0 select-none">
+                <div class="flex h-full">
+                    <!-- TAB 1: VISUAL -->
+                    <button onclick="editor.setView('visual')" id="tab-visual" class="editor-tab active h-full px-4 text-xs font-medium flex items-center gap-2 border-r border-gray-800 transition">
+                        <i class="fa-solid fa-puzzle-piece"></i> Visual
+                    </button>
+                    <!-- TAB 2: PLAY (Replaces Source) -->
+                    <button onclick="editor.setView('play')" id="tab-play" class="editor-tab h-full px-4 text-xs font-medium text-gray-400 hover:text-white hover:bg-dark-700 flex items-center gap-2 border-r border-gray-800 transition">
+                        <i class="fa-solid fa-gamepad"></i> Play / Test
+                    </button>
+                </div>
+                
+                <div id="lbl-current-file" class="text-xs text-gray-500 font-mono hidden md:block">
+                   No File Selected
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <!-- Button for EDITOR sidebar -->
+                    <button onclick="editor.toggleCodeSidebar()" id="btn-code-sidebar" class="text-xs bg-gray-700 hover:bg-mob-600 text-white px-3 py-1 rounded transition flex items-center gap-2">
+                        <i class="fa-brands fa-python"></i> <span class="hidden sm:inline">Show Code</span>
+                    </button>
+
+                    <!-- ADDED: Button for PLAYER sidebar (initially hidden) -->
+                    <button onclick="editor.togglePlayerSidebar()" id="btn-player-sidebar" class="hidden text-xs bg-gray-700 hover:bg-blue-600 text-white px-3 py-1 rounded transition flex items-center gap-2">
+                        <i class="fa-solid fa-sliders"></i> <span class="hidden sm:inline">Player Tools</span>
+                    </button>
+                </div>
+            </header>
 
         <!-- WORKSPACE AREA -->
         <div class="flex-1 relative flex overflow-hidden">
@@ -176,29 +182,15 @@
             <!-- 1. BLOCKLY CANVAS -->
             <div id="blocklyDiv" class="flex-1 bg-dark-900 z-10 relative"></div>
 
-            <!-- 2. GAME PLAYER (Replaces Code Editor) -->
             <!-- 2. GAME PLAYER -->
-                <div id="gamePlayerView" class="hidden flex-1 bg-black z-10 relative flex-col overflow-hidden bg-[url('/static/img/grid.png')]">
+                <div id="gamePlayerView" class="hidden flex-1 bg-black z-10 relative flex-col overflow-hidden">
                     
                     <!-- Loader -->
                     <div id="game-loader" class="absolute inset-0 z-50 bg-dark-900/90 flex flex-col items-center justify-center hidden">
                         <div class="w-8 h-8 border-4 border-mob-500 border-t-transparent rounded-full animate-spin mb-3"></div>
                         <span class="text-xs text-gray-400 font-mono tracking-widest uppercase">Compiling Scene...</span>
                     </div>
-
-                    <!-- 
-                        WRAPPER FIX:
-                        - justify-start: Pushes content to the TOP.
-                        - pt-12: Adds a small gap at the top.
-                        - No bottom padding needed, remaining space goes there automatically.
-                    -->
                     <div class="w-full h-full flex items-center justify-start pt-12 flex-col">
-                        
-                        <!-- 
-                             GAME BOX:
-                             - max-h-[65vh]: Limits height to 65% of screen.
-                             - aspect-video: Keeps 16:9 ratio.
-                        -->
                         <div id="vn-container" class="relative w-full max-w-5xl max-h-[65vh] aspect-video shadow-2xl bg-black border border-gray-800 rounded-lg ring-1 ring-white/10">
                             <!-- Engine Injects Here -->
                         </div>
@@ -222,6 +214,18 @@
                 <textarea id="generatedCode" readonly class="flex-1 bg-transparent p-4 text-xs font-mono text-blue-100 resize-none outline-none leading-relaxed selection:bg-mob-900"></textarea>
             </div>
 
+            <!-- ADDED: 4. PLAYER SIDEBAR -->
+            <div id="playerSidebar" class="hidden w-72 glass-panel z-20 flex-col border-l border-gray-800 transition-all duration-300">
+                <div class="h-8 bg-dark-950/50 flex items-center justify-between px-3 border-b border-white/5 flex-shrink-0">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase">Player Tools</span>
+                </div>
+                
+                <!-- CHANGE THIS DIV BELOW to have id="playerSidebarContent" -->
+                <div id="playerSidebarContent" class="flex-1 flex flex-col h-full overflow-hidden">
+                    <!-- The Javascript will inject the buttons here automatically -->
+                </div>
+            </div>
+
         </div>
     </main>
     </div>
@@ -231,11 +235,13 @@
         <category name="Setup" colour="#D35400">
             <block type="story_setup"></block>
             <block type="define_character"></block>
+            <block type="vn_scene_setup"></block>
         </category>
         <category name="Flow Control" colour="#5C81A6">
             <block type="vn_label"></block>
             <block type="vn_jump"></block>
             <block type="vn_finish"></block>
+            <block type="vn_next"></block>
         </category>
         <category name="Dialogue" colour="#5CA65C">
             <block type="vn_say"></block>
