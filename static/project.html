@@ -577,9 +577,7 @@
                     description: formData.get('description') || "",
                     version: formData.get('version') || "0.1.0",
                     authors: authorsArray,
-                    script_groups: [
-                        { slug: "main", name: "Main Story", source_files: [] }
-                    ]
+                    script_groups: []
                 };
                 
                 const res = await this.api('/projects/', 'POST', manifest);

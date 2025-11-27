@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 from typing import List, Dict, Literal
+import uuid
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from dataclasses import asdict
@@ -135,6 +136,54 @@ async def upload_character_asset(
         "status": "uploaded", 
         "filename": file.filename, 
         "subfolder": "default"
+    }
+
+# --- NEW ROUTE ---
+@router.post("/characters/{char_id}/profile-image")
+async def upload_character_profile_image(
+    char_id: str, 
+    file: UploadFile = File(...)
+):
+    """
+    Uploads a profile image for a character and updates their metadata.
+    """
+    char_root = CHAR_DIR / char_id
+    if not char_root.exists():
+        raise HTTPException(404, "Character does not exist. Create it first.")
+
+    # Sanitize and create a unique filename to avoid conflicts
+    file_extension = Path(file.filename).suffix
+    # e.g., _profile_a1b2c3d4.png
+    new_filename = f"_profile_{uuid.uuid4().hex[:8]}{file_extension}"
+    file_location = char_root / new_filename
+
+    # Save the uploaded file
+    with open(file_location, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # --- Update the character's metadata ---
+    meta_file = char_root / "data.json"
+    if not meta_file.exists():
+        # This shouldn't happen if the character was created properly
+        raise HTTPException(500, "Character metadata file not found.")
+
+    with open(meta_file, "r+") as f:
+        data = json.load(f)
+        
+        # Store the profile image filename in custom_data
+        if "custom_data" not in data:
+            data["custom_data"] = {}
+        data["custom_data"]["profile_image"] = new_filename
+        
+        # Go back to the beginning of the file to overwrite it
+        f.seek(0)
+        json.dump(data, f, indent=2)
+        f.truncate()
+
+    return {
+        "status": "uploaded",
+        "profile_image": new_filename,
+        "url_path": f"/media/characters/{char_id}/{new_filename}"
     }
 
 @router.get("/sprite-map", response_model=Dict[str, List[str]])
