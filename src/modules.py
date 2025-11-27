@@ -511,7 +511,17 @@ class VisualNovelModule:
         result = {
             "type":"unlock_dialogues",
             "action":"unlock_dialogues",
-            "events":events
+            "events":events # list[str] containing labels
+        }
+        if(nested==False):
+            self.dialogueDict.append(result)
+        return result
+    
+    def random_dialogue(self,events:list,nested = False):
+        result = {
+            "type":"random_dialogue",
+            "action":"random_dialogue",
+            "events":events # list[str] containing labels
         }
         if(nested==False):
             self.dialogueDict.append(result)

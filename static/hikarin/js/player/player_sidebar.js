@@ -3,6 +3,8 @@ export class PlayerSidebar {
         this.gameRunner = gameRunner;
         this.isOpen = false;
         this.isRunning = false;
+        this.logs = [];
+        this.maxLogs = 150;
         
         this.dom = {
             sidebar: document.getElementById('playerSidebar'),
@@ -14,46 +16,46 @@ export class PlayerSidebar {
     }
 
     renderContent() {
-        // Changed grid layout to accommodate the new button
         this.dom.content.innerHTML = `
             <div class="flex flex-col h-full">
+                <!-- Runtime Controls Section (Unchanged) -->
                 <div class="p-4 border-b border-gray-700 bg-gray-800/50">
                     <h3 class="text-gray-100 font-bold mb-3 flex items-center gap-2">
                         <i class="fa-solid fa-gamepad"></i> Runtime Controls
                     </h3>
                     
                     <div class="flex gap-2">
-                        <!-- Play -->
-                        <button id="ps-btn-play" class="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-700 hover:bg-green-600 text-white text-sm font-bold rounded transition">
-                            <i class="fa-solid fa-play"></i>
-                        </button>
-                        
-                        <!-- Stop -->
-                        <button id="ps-btn-stop" disabled class="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-700 text-gray-500 text-sm font-bold rounded cursor-not-allowed transition">
-                            <i class="fa-solid fa-stop"></i>
-                        </button>
-
-                        <!-- NEW: Reset/Purge -->
-                        <button id="ps-btn-reset" class="flex-0 px-3 py-2 bg-orange-700 hover:bg-orange-600 text-white text-sm font-bold rounded transition" title="Purge Variables">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
+                        <button id="ps-btn-play" class="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-700 hover:bg-green-600 text-white text-sm font-bold rounded transition"><i class="fa-solid fa-play"></i></button>
+                        <button id="ps-btn-stop" disabled class="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-700 text-gray-500 text-sm font-bold rounded cursor-not-allowed transition"><i class="fa-solid fa-stop"></i></button>
+                        <button id="ps-btn-reset" class="flex-0 px-3 py-2 bg-orange-700 hover:bg-orange-600 text-white text-sm font-bold rounded transition" title="Purge Variables"><i class="fa-solid fa-trash"></i></button>
                     </div>
     
                     <div class="mt-3">
                         <button id="ps-btn-env" disabled class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gray-700 text-gray-500 text-sm font-bold rounded cursor-not-allowed transition">
-                            <i class="fa-solid fa-sun"></i>
-                            <span>Set to Night</span>
+                            <i class="fa-solid fa-sun"></i> <span>Set to Night</span>
                         </button>
                     </div>
 
                     <div id="ps-status-bar" class="mt-3 text-xs font-mono text-gray-400 text-center border border-gray-700 rounded p-1">State: IDLE</div>
                 </div>
 
+                <!-- Debug/Log Display Area -->
                 <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                    <!-- Debug Variables Section -->
                     <h4 class="text-xs uppercase text-gray-500 font-bold mb-2 tracking-wider">Debug Variables</h4>
-                    <div id="ps-debug-output" class="text-xs font-mono text-gray-300 space-y-1">
+                    <div id="ps-debug-output" class="text-xs font-mono text-gray-300 space-y-1 mb-6">
                         <span class="italic opacity-50">Game not running.</span>
                     </div>
+
+                    <!-- --- NEW: Runtime Log Section --- -->
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-xs uppercase text-gray-500 font-bold tracking-wider">Runtime Log</h4>
+                        <button id="ps-btn-clear-log" class="text-xs text-gray-500 hover:text-white transition" title="Clear Logs"><i class="fa-solid fa-eraser"></i> Clear</button>
+                    </div>
+                    <div id="ps-log-output" class="text-[11px] font-mono text-gray-400 space-y-1 bg-black/30 p-2 rounded-md h-64 overflow-y-auto custom-scrollbar-dark">
+                        <span class="italic opacity-50">Waiting for logs...</span>
+                    </div>
+                    <!-- --- END NEW --- -->
                 </div>
             </div>
         `;
@@ -65,10 +67,17 @@ export class PlayerSidebar {
         this.dom.status = document.getElementById('ps-status-bar');
         this.dom.debug = document.getElementById('ps-debug-output');
 
+        // --- NEW: Cache log elements ---
+        this.dom.logOutput = document.getElementById('ps-log-output');
+        this.dom.btnClearLog = document.getElementById('ps-btn-clear-log');
+        // --- END NEW ---
+
         this.dom.btnPlay.addEventListener('click', () => this.handlePlay());
         this.dom.btnStop.addEventListener('click', () => this.handleStop());
         this.dom.btnReset.addEventListener('click', () => this.handleReset()); // Listener
         this.dom.btnEnv.addEventListener('click', () => this.handleToggleEnvironment()); // NEW
+
+        this.dom.btnClearLog.addEventListener('click', () => this.handleClearLogs());
     }
 
     async handlePlay() {
@@ -80,6 +89,10 @@ export class PlayerSidebar {
         try {
             this.gameRunner.onDebugUpdate = (globals, variables, state) => {
                 this.updateDebugView(globals, variables, state);
+            };
+            this.handleClearLogs(); // Clear logs from previous session
+            this.gameRunner.onLogUpdate = (logEntry) => {
+                this.addLog(logEntry);
             };
             await this.gameRunner.run();
             this.updateStatus("RUNNING");
@@ -96,6 +109,49 @@ export class PlayerSidebar {
         this.setRunningState(false);
         this.updateStatus("STOPPED");
         if(this.dom.debug) this.dom.debug.classList.add('opacity-60', 'grayscale');
+    }
+
+    addLog(logEntry) {
+        this.logs.push(logEntry);
+        // Trim the logs array if it gets too long
+        if (this.logs.length > this.maxLogs) {
+            this.logs = this.logs.slice(-this.maxLogs);
+        }
+        this.renderLogs();
+    }
+
+    renderLogs() {
+        if (!this.dom.logOutput) return;
+
+        const categoryColors = {
+            STEP: "text-cyan-400",
+            FLOW: "text-green-400",
+            VAR:  "text-orange-400",
+            COND: "text-purple-400",
+            ERR:  "text-red-500 font-bold",
+            WARN: "text-yellow-400"
+        };
+        
+        if (this.logs.length === 0) {
+            this.dom.logOutput.innerHTML = `<span class="italic opacity-50">Waiting for logs...</span>`;
+            return;
+        }
+
+        const html = this.logs.map(entry => {
+            const colorClass = categoryColors[entry.category] || "text-gray-400";
+            const argsString = entry.args.length > 0 ? ` <span class="text-gray-500">${JSON.stringify(entry.args)}</span>` : '';
+            return `<div><span class="${colorClass}">[${entry.category}]</span> ${entry.message}${argsString}</div>`;
+        }).join('');
+
+        this.dom.logOutput.innerHTML = html;
+        // Auto-scroll to the bottom to show the latest log
+        this.dom.logOutput.scrollTop = this.dom.logOutput.scrollHeight;
+    }
+
+
+    handleClearLogs() {
+        this.logs = [];
+        this.renderLogs();
     }
 
     // ------------------------------------------------------------------
@@ -115,7 +171,7 @@ export class PlayerSidebar {
     }
 
     handleToggleEnvironment() {
-        if (!this.isRunning) return; // Only works while running
+        //if (!this.isRunning) return; // Only works while running
         
         this.isNight = !this.isNight;
 

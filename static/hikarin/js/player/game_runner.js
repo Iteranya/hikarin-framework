@@ -11,6 +11,7 @@ export class GameRunner {
         
         // Callback hook for the Sidebar UI
         this.onDebugUpdate = null; 
+        this.onLogUpdate = null;
         
         // -------------------------------------------------------------
         // STATE PERSISTENCE
@@ -117,23 +118,39 @@ export class GameRunner {
      * Internal: Fetches compiled JSON from the server.
      */
     async compileProject() {
-        const url = `/api/projects/${this.projectSlug}/compile_temp/${this.groupSlug}`;
+    const url = `/api/projects/${this.projectSlug}/compile_temp/${this.groupSlug}`;
+    
+    // We'll wrap the whole thing in a try...catch to be safe, 
+    // though the primary error handling is inside.
+    try {
         const res = await fetch(url, { method: 'POST' });
 
-        if (!res.ok) throw new Error(`API Error: ${res.status}`);
+        // This block now correctly handles all non-2xx responses (like 400, 404, 500)
+        if (!res.ok) {
+            // The server sent an error. We need to parse the JSON body to get the 'detail' message.
+            const errorData = await res.json(); // e.g., { "detail": "Script Validation Error: ..." }
+            
+            // Throw an error with the USEFUL message from the server.
+            // Use errorData.detail, and have a fallback just in case.
+            throw new Error(errorData.detail || `API Error: ${res.status} ${res.statusText}`);
+        }
         
+        // If we get here, the request was successful (status 200 OK)
         const responseJson = await res.json();
 
-        // Handle Compiler/Python Errors
-        if (responseJson.status === 'error') {
-            const err = new Error(responseJson.message);
-            err.type = 'compilation';
-            err.file = responseJson.file;
-            throw err;
-        }
+        // The old check for `responseJson.status === 'error'` is no longer needed.
+        // That kind of error is now caught by the `!res.ok` check above.
+        // A successful response will always have `status: 'success'`.
 
         return responseJson.data;
+
+    } catch (error) {
+        // This outer catch will grab the error we threw above, or any network-level errors.
+        console.error("Caught in compileProject:", error);
+        // Re-throw the error so the calling function can handle it (e.g., display it in the UI).
+        throw error;
     }
+}
 
     /**
      * Internal: Instantiates the Engine with the persistent data.
@@ -162,11 +179,21 @@ export class GameRunner {
         const logicLayer = this.engine.runtime || this.engine;
 
         if (logicLayer && logicLayer.events) {
+            // Hook for variable/state updates
             logicLayer.events.onUpdateDebug = (globals, variables, state) => {
                 if (this.onDebugUpdate) {
                     this.onDebugUpdate(globals, variables, state);
                 }
             };
+
+            // --- NEW: Hook for log events ---
+            logicLayer.events.onLog = (logEntry) => {
+                if (this.onLogUpdate) {
+                    this.onLogUpdate(logEntry);
+                }
+            };
+            // --- END NEW ---
+
         } else {
             console.warn("⚠️ GameRunner: Could not attach debug hooks. 'events' object not found.");
         }

@@ -46,6 +46,7 @@ def sanitize(data_list):
     return [sanitize_dict(d) for d in data_list]
 
 def check(actions: list[dict]):
+    print("Checking Starts Now...")
     existing_label = []
     existing_jump = []
     existing_id = {}
@@ -61,6 +62,8 @@ def check(actions: list[dict]):
                 # Collect jump labels inside choice
                 for choice in action["choice"]:
                     existing_jump.append(choice["label"])
+            elif action["type"] == "next":
+                existing_jump.append(action["label"])
             else:
                 action_id = action["id"]
                 if action_id in existing_id:
@@ -69,7 +72,14 @@ def check(actions: list[dict]):
                     existing_id[action_id] = [action]
         
         # Check if any jump points to a non-existing label
+    print("Checking Existing Label:")
+    print(existing_label)
+    print("Checking Existing Jump:")
+    print(existing_jump)
     for jump in existing_jump:
+        
+        print("Checking for:")
+        print(jump)
         if jump not in existing_label:
             raise ValueError(f"Label not found: {jump}")
     
@@ -143,6 +153,7 @@ def process_fsm(raw_script_data: list[dict]) -> list[dict]:
     # 2. Sanitize
     flat = sanitize(flat)
     # 3. Validate
+    print("Double Checking Script")
     check(flat)
     
     return flat

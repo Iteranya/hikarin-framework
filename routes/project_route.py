@@ -156,30 +156,23 @@ def write_file(slug: str, filename: str, content: str = Body(..., embed=True)):
 
 @router.post("/{slug}/compile")
 def compile_project(slug: str):
-    # This version is packed with print statements for aggressive debugging.
-    
-    print("\n\n>>> COMPILATION STARTED <<<")
-    
     project_path = PROJECTS_DIR / slug
     if not project_path.exists():
-        raise HTTPException(404, "Project not found")
-    
+        raise HTTPException(status_code=404, detail="Project not found")
+
     manifest_path = project_path / "manifest.json"
     output_dir = project_path / "generated"
     output_dir.mkdir(exist_ok=True)
-    print(f">>> Project Path: {project_path}")
 
     # 1. Load Manifest
-    script_groups = [ScriptGroup(slug="behavior", name="Main", source_files=["main.py"])]
-    if manifest_path.exists():
-        try:
-            with open(manifest_path) as f:
-                data = json.load(f)
-                if "script_groups" in data:
-                    script_groups = [ScriptGroup(**g) for g in data["script_groups"]]
-            print(">>> STEP 1: Manifest loaded successfully.")
-        except Exception as e:
-            print(f">>> STEP 1: FAILED to load manifest: {e}")
+    try:
+        with open(manifest_path) as f:
+            data = json.load(f)
+            script_groups = [ScriptGroup(**g) for g in data.get("script_groups", [])]
+        if not script_groups: # Handle empty or missing script_groups
+             script_groups = [ScriptGroup(slug="behavior", name="Main", source_files=["main.py"])]
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to load or parse manifest.json: {e}")
 
     # Ensure SDK is in path
     if str(Path.cwd()) not in sys.path:
@@ -188,90 +181,79 @@ def compile_project(slug: str):
     compilation_report = {}
     logs = []
 
-    # 2. LOOP THROUGH EACH SCRIPT GROUP
-    for group in script_groups:
-        print(f"\n>>> STEP 2: Processing Group '{group.name}'")
-        logs.append(f"--- Compiling Group: {group.name} ({group.slug}.json) ---")
-        
-        VisualNovelModule.reset()
-
-        # 3. Execute all Python Files in this Group
-        for filename in group.source_files:
-            print(f"\n  >>> STEP 3: Processing file '{filename}'")
-            file_path = project_path / filename
+    # WRAP THE ENTIRE COMPILATION PROCESS IN A TRY/EXCEPT
+    try:
+        # 2. LOOP THROUGH EACH SCRIPT GROUP
+        for group in script_groups:
+            logs.append(f"--- Compiling Group: {group.name} ({group.slug}.json) ---")
             
-            if not file_path.exists():
-                print(f"  >>> File not found, skipping.")
-                logs.append(f"  [Skip] {filename} not found")
-                continue
+            VisualNovelModule.reset()
 
-            # Dynamic Import
-            module_name = f"proj_{slug}_{group.slug}_{filename.replace('.', '_')}"
-            
-            try:
-                print(f"  >>> STEP 4: Attempting to import '{filename}' as '{module_name}'")
-                spec = importlib.util.spec_from_file_location(module_name, file_path)
-                
-                if not (spec and spec.loader):
-                    print("  >>> FAILED: Could not create module spec.")
+            # 3. Execute all Python Files in this Group
+            for filename in group.source_files:
+                file_path = project_path / filename
+                if not file_path.exists():
+                    logs.append(f"  [Skip] {filename} not found")
                     continue
+                
+                module_name = f"proj_{slug}_{group.slug}_{filename.replace('.', '_')}"
+
+                # Force reload of module to get code changes
+                if module_name in sys.modules:
+                    del sys.modules[module_name]
+
+                spec = importlib.util.spec_from_file_location(module_name, file_path)
+                if not (spec and spec.loader):
+                    raise Exception(f"Could not create module spec for {filename}")
 
                 user_module = importlib.util.module_from_spec(spec)
                 sys.modules[module_name] = user_module
                 spec.loader.exec_module(user_module)
-                print(f"  >>> STEP 5: Module '{filename}' executed.")
                 
                 if hasattr(user_module, "story"):
-                    print("  >>> STEP 6: Found story() function. Executing it now...")
-                    # This is where your module's 'Compiling...' prints will appear
                     user_module.story()
-                    print("  >>> STEP 7: story() function finished.")
                     logs.append(f"  [OK] {filename}: Executed successfully")
                 else:
-                    print("  >>> WARNING: No story() function found in this file.")
                     logs.append(f"  [WARN] {filename}: No story() function")
 
-            except Exception as e:
-                # ==========================================================
-                # THIS IS THE MOST IMPORTANT PART. IT WILL PRINT THE ERROR
-                # ==========================================================
-                print(f"  >>> STEP X: CRITICAL FAILURE while processing '{filename}'!")
-                traceback.print_exc() # This prints the full error to your console
-                # ==========================================================
-                logs.append(f"  [CRIT] {filename} Failed: {str(e)}")
-
-
-        # 4. Compile the Group to JSON
-        print("\n>>> STEP 8: All files in group processed. Finalizing compilation...")
-        try:
+            # 4. Compile the Group to JSON
             final_story_list = VisualNovelModule().to_list()
-            print(f">>> STEP 9: Retrieved final story list with {len(final_story_list)} items.")
 
             if final_story_list:
-                print(">>> STEP 10: Calling process_fsm...")
+                # This is where your custom check() function will raise a ValueError
                 final_fsm = process_fsm(final_story_list)
-                print(f">>> STEP 11: process_fsm finished. Final state count: {len(final_fsm)}")
                 
                 output_file = output_dir / f"{group.slug}.json"
                 with open(output_file, "w", encoding='utf-8') as f:
                     json.dump(final_fsm, f, indent=4)
-                print(f">>> STEP 12: Successfully saved to {output_file}")
                 
                 compilation_report[group.slug] = {"status": "success", "states": len(final_fsm)}
             else:
                 compilation_report[group.slug] = {"status": "empty"}
-                
-        except Exception as e:
-            print(">>> STEP Y: CRITICAL FAILURE during final processing (process_fsm or file save)!")
-            traceback.print_exc()
-            compilation_report[group.slug] = {"status": "failed", "error": str(e)}
 
-    print("\n>>> COMPILATION FINISHED <<<\n")
-    return {
-        "message": "Project Compiled",
-        "report": compilation_report,
-        "logs": logs
-    }
+        # If we get here, everything was successful
+        return {
+            "message": "Project Compiled Successfully",
+            "report": compilation_report,
+            "logs": logs
+        }
+
+    # THIS IS THE KEY: CATCH THE SPECIFIC ERROR FROM YOUR COMPILER
+    except ValueError as e:
+        # This will catch the "Label not found" or "Duplicate action" errors from check()
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=400, # Bad Request, because the user's script is wrong
+            detail=f"Script Error: {str(e)}"
+        )
+    # CATCH ANY OTHER UNEXPECTED ERRORS
+    except Exception as e:
+        traceback.print_exc() # Log the full error to your server console for debugging
+        # Return a generic but helpful error to the user
+        raise HTTPException(
+            status_code=500, # Internal Server Error
+            detail=f"An unexpected compilation error occurred: {type(e).__name__} - {str(e)}"
+        )
 
 @router.get("/{slug}/export")
 def export_project(slug: str):
@@ -350,25 +332,18 @@ def compile_temp(slug: str, group_slug: str):
     if str(Path.cwd()) not in sys.path:
         sys.path.append(str(Path.cwd()))
 
-    # 2. Reset the Visual Novel Engine
-    VisualNovelModule.reset()
-    
-    # 3. Execute Python Files for this Group
-    for filename in target_group.source_files:
-        file_path = project_path / filename
+    try:
+        VisualNovelModule.reset()
         
-        if not file_path.exists():
-            raise HTTPException(400, f"Source file '{filename}' missing.")
+        for filename in target_group.source_files:
+            file_path = project_path / filename
+            if not file_path.exists():
+                raise HTTPException(400, f"Source file '{filename}' missing.")
 
-        # Create a unique module name for this specific compile run
-        # (We overwrite the module in sys.modules to force a reload of code changes)
-        module_name = f"proj_{slug}_{group_slug}_{filename.replace('.', '_')}"
-        
-        # Force cleanup of previous import to ensure we get the latest code
-        if module_name in sys.modules:
-            del sys.modules[module_name]
+            module_name = f"proj_{slug}_{group_slug}_{filename.replace('.', '_')}"
+            if module_name in sys.modules:
+                del sys.modules[module_name]
 
-        try:
             spec = importlib.util.spec_from_file_location(module_name, file_path)
             if not (spec and spec.loader):
                 raise Exception("Could not create module spec")
@@ -379,30 +354,17 @@ def compile_temp(slug: str, group_slug: str):
             
             if hasattr(user_module, "story"):
                 user_module.story()
-            else:
-                # Not a fatal error, but means no content added from this file
-                print(f"WARNING: No story() found in {filename}")
 
-        except Exception as e:
-            traceback.print_exc()
-            # Return the python error to the UI so the user sees what broke
-            return {
-                "status": "error",
-                "file": filename,
-                "error_type": type(e).__name__,
-                "message": str(e)
-            }
-
-    # 4. Process into FSM (Compile Logic)
-    try:
+        # Process into FSM (Compile Logic)
         final_story_list = VisualNovelModule().to_list()
         
         if not final_story_list:
-            return {"status": "empty", "data": []}
+            return {"status": "success", "data": [], "state_count": 0, "group": group_slug}
 
+        # Your custom compiler error will be raised here
         final_fsm = process_fsm(final_story_list)
         
-        # 5. Return the JSON directly
+        # Return the JSON directly on success
         return {
             "status": "success",
             "group": group_slug,
@@ -410,9 +372,17 @@ def compile_temp(slug: str, group_slug: str):
             "data": final_fsm
         }
         
+    # CATCH THE USER'S SCRIPT ERROR
+    except ValueError as e:
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=400, # Bad script input
+            detail=f"Script Validation Error: {str(e)}"
+        )
+    # CATCH ANY OTHER ERROR
     except Exception as e:
         traceback.print_exc()
-        return {
-            "status": "compiler_error",
-            "message": str(e)
-        }
+        raise HTTPException(
+            status_code=500, # Something else went wrong on the server
+            detail=f"Compilation Failed: {type(e).__name__} - {str(e)}"
+        )
