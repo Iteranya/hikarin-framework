@@ -319,7 +319,7 @@ class VisualNovelModule:
             result = {
                 "type":"remove_sprite",
                 "action":"remove",
-                "sprite":sprite,
+                "sprite":character,
             }
             if(nested==False):
                 self.dialogueDict.append(result)
