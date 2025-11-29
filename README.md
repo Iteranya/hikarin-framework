@@ -7,27 +7,21 @@ Turn your story ideas into playable, interactive experiences. **Hikarin** is a s
 
 Instead of creating a clunky game file, Hikarin transforms your story into a single, universal file that can be played almost anywhere—in a web browser, inside other games, and even in Minecraft.
 
-This project was born from a single, passionate goal: to bring the legendary **Minecraft Mob Talker Mod** back to life, allowing rich, character-driven stories to unfold right inside the game.
-
 ---
 
 ## 📸 A Glimpse Into Your Creative Studio
 
 ### **Build Your Story with Visual Blocks**
 No coding? No problem! Drag and drop blocks to build your dialogue, create choices, and design complex story branches. It's as intuitive as putting together a puzzle.
-<img width="1919" height="908" alt="The visual block editor showing a story's flow" src="https://github.com/user-attachments/assets/6695bec1-51e2-455e-afae-16d99bb0505e" />
 
 ### **Instantly Play and Test Your Story**
 With the click of a button, you can play through your creation right in your browser. See your characters, dialogue, and choices come to life instantly, making it easy to spot mistakes and perfect your narrative.
-<img width="1919" height="910" alt="The in-browser preview of a visual novel scene" src="https://github.com/user-attachments/assets/07c06d9c-94de-41b3-a172-593a421f18cd" />
 
 ### **Keep Your Projects Organized**
 Manage all your stories, characters, and scripts from one clean and simple dashboard.
-<img width="1918" height="898" alt="Project management dashboard showing multiple stories" src="https://github.com/user-attachments/assets/a6ae241c-c87e-45e0-b229-804d74b9b903" />
 
 ### **Manage Your Characters and Art**
 Bring your characters to life in the character editor. Upload their portraits, add different expressions, and manage all your art assets like backgrounds and music in one place.
-<img width="1177" height="830" alt="The character editor with multiple expressions" src="https://github.com/user-attachments/assets/134e12b9-d3b1-471f-8ac1-543bcc6c79e0" />
 
 ---
 
@@ -52,12 +46,10 @@ With Hikarin, bringing your story to life is a simple, three-step process:
 
 ## ⛏️ The Grand Vision: Bringing Stories to Minecraft
 
-The heart and soul of this project is the **Mob Talker Revival**. We believe that games like Minecraft are incredible sandboxes for storytelling, and Hikarin is the key to unlocking that potential.
-
 Here’s how it works:
 1.  You create an amazing, interactive story in the easy-to-use Hikarin editor.
 2.  You export it as a universal `story.json` file.
-3.  The companion Mob Talker mod for Minecraft reads that file, allowing players to interact with characters and experience your visual novel *directly inside the game*.
+3.  The companion Hikarin Visual Novel mod for Minecraft reads that file, allowing players to interact with characters and experience your visual novel *directly inside the game*.
 
 ---
 
