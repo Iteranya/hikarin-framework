@@ -13,7 +13,6 @@ Instead of creating a clunky game file, Hikarin transforms your story into a sin
 
 ### **Build Your Story with Visual Blocks**
 No coding? No problem! Drag and drop blocks to build your dialogue, create choices, and design complex story branches. It's as intuitive as putting together a puzzle.
-<img width="1919" height="908" alt="The visual block editor showing a story's flow" src="https://github.com/user-attachments/assets/6695bec1-51e2-455e-afae-16d99bb0505e" />
 
 ### **Instantly Play and Test Your Story**
 With the click of a button, you can play through your creation right in your browser. See your characters, dialogue, and choices come to life instantly, making it easy to spot mistakes and perfect your narrative.
