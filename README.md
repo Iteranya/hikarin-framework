@@ -17,15 +17,12 @@ No coding? No problem! Drag and drop blocks to build your dialogue, create choic
 
 ### **Instantly Play and Test Your Story**
 With the click of a button, you can play through your creation right in your browser. See your characters, dialogue, and choices come to life instantly, making it easy to spot mistakes and perfect your narrative.
-<img width="1919" height="910" alt="The in-browser preview of a visual novel scene" src="https://github.com/user-attachments/assets/07c06d9c-94de-41b3-a172-593a421f18cd" />
 
 ### **Keep Your Projects Organized**
 Manage all your stories, characters, and scripts from one clean and simple dashboard.
-<img width="1918" height="898" alt="Project management dashboard showing multiple stories" src="https://github.com/user-attachments/assets/a6ae241c-c87e-45e0-b229-804d74b9b903" />
 
 ### **Manage Your Characters and Art**
 Bring your characters to life in the character editor. Upload their portraits, add different expressions, and manage all your art assets like backgrounds and music in one place.
-<img width="1177" height="830" alt="The character editor with multiple expressions" src="https://github.com/user-attachments/assets/134e12b9-d3b1-471f-8ac1-543bcc6c79e0" />
 
 ---
 
