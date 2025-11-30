@@ -27,7 +27,7 @@ Bring your characters to life in the character editor. Upload their portraits, a
 
 ## ✨ Why You'll Love Hikarin
 
-*   **Create Once, Play Anywhere:** The magic of Hikarin is that it exports your entire visual novel as a single, portable `story.json` file. If a game or platform can read a simple text file, it can run your story. This means your creation isn't trapped in one place.
+*   **Create Once, Play Anywhere:** The magic of Hikarin is that it exports your entire visual novel as a single, portable `your_story.json` file. If a game or platform can read a simple text file, it can run your story. This means your creation isn't trapped in one place.
 *   **No Code, All Creativity:** Focus on your story, not on programming. Our intuitive visual block editor makes building complex narratives as simple as connecting the dots.
 *   **See Your Story Come to Life Instantly:** No more waiting for your project to compile or load. The built-in preview lets you test your story in real-time, so you can focus on creating, not waiting.
 *   **Your All-in-One Studio:** Manage your characters, art, and sound effects from a simple, integrated library. No more digging through folders!
