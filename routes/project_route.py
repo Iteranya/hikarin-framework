@@ -271,7 +271,12 @@ def export_project(slug: str):
     if manifest_path.exists():
         with open(manifest_path) as f:
             data = json.load(f)
-            manifest = ProjectManifest(**data)
+            # Strip keys that aren't part of ProjectManifest
+            # (e.g. 'path' injected by list_projects at runtime)
+            import dataclasses
+            valid_keys = {f.name for f in dataclasses.fields(ProjectManifest)}
+            clean_data = {k: v for k, v in data.items() if k in valid_keys}
+            manifest = ProjectManifest(**clean_data)
     else:
         # Fallback if manifest is missing
         manifest = ProjectManifest(slug=slug, name=slug)
