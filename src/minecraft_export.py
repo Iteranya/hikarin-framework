@@ -102,15 +102,22 @@ def export_resource_pack(slug: str, manifest: ProjectManifest) -> str:
         # We Ignore data.json
         lib_chars = LIBRARY_DIR / "characters"
         if lib_chars.exists():
-            for char_folder in lib_chars.iterdir():
+            for char_folder in lib_chars.iterdir():         # → lin/
                 if char_folder.is_dir():
                     target_char_dir = CHAR_TEXTURES_DIR / char_folder.name
                     target_char_dir.mkdir(exist_ok=True)
                     
-                    for file in char_folder.iterdir():
-                        if file.suffix.lower() in ['.png', '.jpg']:
-                            shutil.copy2(file, target_char_dir / file.name)
-
+                    for item in char_folder.iterdir():
+                        if item.is_file() and item.suffix.lower() in ['.png', '.jpg']:
+                            # Profile images sit directly in char folder
+                            shutil.copy2(item, target_char_dir / item.name)
+                        elif item.is_dir():
+                            # Variant subfolders (default/, angry/, etc.)
+                            target_variant_dir = target_char_dir / item.name
+                            target_variant_dir.mkdir(exist_ok=True)
+                            for file in item.iterdir():
+                                if file.is_file() and file.suffix.lower() in ['.png', '.jpg']:
+                                    shutil.copy2(file, target_variant_dir / file.name)
         # 5. COPY GENERATED SCRIPTS (FSM JSON)
         # ------------------------------------
         # These go directly into assets/mobtalkerredux/
