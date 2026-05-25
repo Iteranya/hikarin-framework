@@ -8,6 +8,7 @@ import * as vn_next from './flow/vn_next.js';
 import * as vn_say from './dialogue/vn_say.js';
 import * as vn_speak from './dialogue/vn_speak.js';
 import * as vn_sound_effect from './dialogue/vn_sfx.js';
+import * as vn_game_action from './dialogue/vn_game_action.js'
 import * as vn_show from './sprites/vn_show.js';
 import * as vn_remove from './sprites/vn_remove.js';
 import * as vn_remove_sprite from './sprites/vn_remove_sprite.js';
@@ -63,6 +64,7 @@ const allBlockModules = [
   // Category 7
   vn_idle_chats,
   vn_unlock_dialogue,
+  vn_game_action,
 ];
 
 /**
