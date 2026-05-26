@@ -8,7 +8,6 @@ import * as vn_next from './flow/vn_next.js';
 import * as vn_say from './dialogue/vn_say.js';
 import * as vn_speak from './dialogue/vn_speak.js';
 import * as vn_sound_effect from './dialogue/vn_sfx.js';
-import * as vn_game_action from './dialogue/vn_game_action.js'
 import * as vn_show from './sprites/vn_show.js';
 import * as vn_remove from './sprites/vn_remove.js';
 import * as vn_remove_sprite from './sprites/vn_remove_sprite.js';
@@ -22,6 +21,7 @@ import * as vn_conditional from './conditional/vn_conditional.js';
 import * as vn_conditional_time from './conditional/vn_conditional_time.js';
 import * as vn_idle_chats from './special/vn_idle.js';
 import * as vn_unlock_dialogue from './special/vn_unlock_dialogue.js';
+import * as vn_game_action from './special/vn_game_action.js'
 
 /**
  * A list of all imported block modules.

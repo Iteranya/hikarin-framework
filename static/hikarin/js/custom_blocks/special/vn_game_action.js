@@ -14,7 +14,7 @@ export const definition = {
   ],
   "previousStatement": null,
   "nextStatement": null,
-  "colour": 210, // Same blue as other presentation blocks
+  "colour": 345, // Special / Extra blocks
   "tooltip": "Run Game actions. Does not loop.",
   "helpUrl": ""
 };
