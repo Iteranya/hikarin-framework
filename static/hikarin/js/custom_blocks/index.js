@@ -21,6 +21,7 @@ import * as vn_conditional from './conditional/vn_conditional.js';
 import * as vn_conditional_time from './conditional/vn_conditional_time.js';
 import * as vn_idle_chats from './special/vn_idle.js';
 import * as vn_unlock_dialogue from './special/vn_unlock_dialogue.js';
+import * as vn_game_action from './special/vn_game_action.js'
 
 /**
  * A list of all imported block modules.
@@ -63,6 +64,7 @@ const allBlockModules = [
   // Category 7
   vn_idle_chats,
   vn_unlock_dialogue,
+  vn_game_action,
 ];
 
 /**

@@ -138,6 +138,14 @@ class VisualNovelModule:
         }
         self.dialogueDict.append(result)
         return result
+
+    def game_action(self, actions):
+        result = {
+            "type": "game_action",
+            "actions": actions,
+        }
+        self.dialogueDict.append(result)
+        return result
     
     def play_music(self, music):
         result = {
