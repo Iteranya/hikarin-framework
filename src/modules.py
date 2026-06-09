@@ -369,17 +369,6 @@ class VisualNovelModule:
         if(nested==False):
             self.dialogueDict.append(result)
         return result
-    
-    def jumpTo(self,labelName:str,nested=False):
-        print("Compiling:" + labelName)
-        result = {
-            "type":"transition",
-            "action":"jump",
-            "label": labelName
-        }
-        if(nested==False):
-            self.dialogueDict.append(result)
-        return result
 
     def finish(self,nested=False):
         print("Compiling A Finish Line")
