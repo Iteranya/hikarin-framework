@@ -391,3 +391,232 @@ def compile_temp(slug: str, group_slug: str):
             status_code=500, # Something else went wrong on the server
             detail=f"Compilation Failed: {type(e).__name__} - {str(e)}"
         )
+    
+@router.post("/{slug}/flow/{group_slug}")
+def save_flow(slug: str, group_slug: str, flow_data: dict = Body(...)):
+    """Saves the flow structure for a script group."""
+    folder = PROJECTS_DIR / slug
+    if not folder.exists():
+        raise HTTPException(404, "Project not found")
+
+    flow_path = folder / "flow.json"
+
+    # Validate basic structure
+    if "startScene" not in flow_data or "scenes" not in flow_data:
+        raise HTTPException(400, "flow.json must contain 'startScene' and 'scenes'")
+
+    flow_path.write_text(json.dumps(flow_data, indent=2), encoding="utf-8")
+
+    # Also register flow.json in manifest if not already there
+    manifest_path = folder / "manifest.json"
+    if manifest_path.exists():
+        manifest = json.loads(manifest_path.read_text())
+        for group in manifest.get("script_groups", []):
+            if group["slug"] == group_slug:
+                if "flow.json" not in group.get("source_files", []):
+                    # Don't add flow.json to source_files — it's not a script
+                    # But we might want to note it exists
+                    pass
+
+    return {"status": "saved", "scenes": len(flow_data.get("scenes", {}))}
+
+
+@router.post("/{slug}/compile-flow/{group_slug}")
+def compile_flow(slug: str, group_slug: str):
+    """
+    Compiles a project using flow.json + body .py files.
+    Generates labels and conditionals in memory (no physical files).
+    """
+    project_path = PROJECTS_DIR / slug
+    if not project_path.exists():
+        raise HTTPException(404, "Project not found")
+
+    # 1. Read flow.json
+    flow_path = project_path / "flow.json"
+    if not flow_path.exists():
+        raise HTTPException(400, "flow.json not found. Create a flow first.")
+
+    try:
+        flow_data = json.loads(flow_path.read_text())
+    except json.JSONDecodeError:
+        raise HTTPException(400, "Invalid flow.json")
+
+    start_scene = flow_data.get("startScene")
+    scenes = flow_data.get("scenes", {})
+
+    if not start_scene:
+        raise HTTPException(400, "No startScene defined in flow.json")
+
+    if str(Path.cwd()) not in sys.path:
+        sys.path.append(str(Path.cwd()))
+
+    try:
+        VisualNovelModule.reset()
+
+        # 2. Walk the flow graph — build execution order
+        visited = set()
+        execution_order = []  # List of ("label"|"body"|"cond", scene_id)
+
+        def walk(scene_id):
+            if scene_id in visited:
+                return
+            visited.add(scene_id)
+
+            execution_order.append(("label", scene_id))
+            execution_order.append(("body", scene_id))
+            execution_order.append(("cond", scene_id))
+
+            scene = scenes.get(scene_id, {})
+            exit_data = scene.get("exit", {"type": "finish"})
+
+            for branch in exit_data.get("branches", []):
+                target = branch.get("target")
+                if target:
+                    walk(target)
+
+        walk(start_scene)
+
+        logs = []
+
+        # 3. Execute each step
+        for step_type, scene_id in execution_order:
+
+            if step_type == "label":
+                label_code = (
+                    "from src.modules import VisualNovelModule\n"
+                    "vn = VisualNovelModule()\n"
+                    f"vn.label('{scene_id}')\n"
+                )
+                exec(label_code)
+                logs.append(f"  [GEN] label('{scene_id}')")
+
+            elif step_type == "body":
+                body_file = project_path / f"{scene_id}.py"
+                if body_file.exists():
+                    module_name = f"flow_{slug}_{group_slug}_{scene_id}_body"
+                    if module_name in sys.modules:
+                        del sys.modules[module_name]
+
+                    spec = importlib.util.spec_from_file_location(module_name, body_file)
+                    if spec and spec.loader:
+                        user_module = importlib.util.module_from_spec(spec)
+                        sys.modules[module_name] = user_module
+                        spec.loader.exec_module(user_module)
+                        if hasattr(user_module, "story"):
+                            user_module.story()
+                            logs.append(f"  [OK] {scene_id}.py")
+                        else:
+                            logs.append(f"  [WARN] {scene_id}.py: no story()")
+                else:
+                    logs.append(f"  [SKIP] {scene_id}.py not found")
+
+            elif step_type == "cond":
+                scene = scenes.get(scene_id, {})
+                exit_data = scene.get("exit", {"type": "finish"})
+                cond_code = _generate_conditional_python(scene_id, exit_data)
+                exec(cond_code)
+                logs.append(f"  [GEN] {exit_data.get('type', 'finish')} for '{scene_id}'")
+
+        # 4. Compile
+        final_list = VisualNovelModule().to_list()
+
+        if not final_list:
+            return {
+                "status": "success",
+                "group": group_slug,
+                "state_count": 0,
+                "data": [],
+                "logs": logs
+            }
+
+        final_fsm = process_fsm(final_list)
+
+        return {
+            "status": "success",
+            "group": group_slug,
+            "state_count": len(final_fsm),
+            "data": final_fsm,
+            "logs": logs
+        }
+
+    except ValueError as e:
+        traceback.print_exc()
+        raise HTTPException(400, f"Script Error: {str(e)}")
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(500, f"Compilation Failed: {type(e).__name__} - {str(e)}")
+
+
+def _generate_conditional_python(scene_id: str, exit_data: dict) -> str:
+    """Generates Python code for a conditional exit. Returns a string for exec()."""
+    exit_type = exit_data.get("type", "finish")
+    branches = exit_data.get("branches", [])
+
+    if exit_type == "choice":
+        pairs = []
+        for b in branches:
+            target = b.get("target", "")
+            label = b.get("label", target)
+            pairs.append(f'        "{target}": "{label}"')
+        choices_str = ",\n".join(pairs)
+        return (
+            "from src.modules import VisualNovelModule\n"
+            "vn = VisualNovelModule()\n"
+            f"vn.choice({{\n{choices_str}\n    }})\n"
+        )
+
+    elif exit_type == "jump":
+        target = branches[0]["target"] if branches else ""
+        return (
+            "from src.modules import VisualNovelModule\n"
+            "vn = VisualNovelModule()\n"
+            f"vn.jumpTo(\"{target}\")\n" if target else
+            "from src.modules import VisualNovelModule\n"
+            "vn = VisualNovelModule()\n"
+            "vn.finish()\n"
+        )
+
+    elif exit_type == "random":
+        events = [f'"{b["target"]}"' for b in branches if b.get("target")]
+        events_str = ", ".join(events)
+        return (
+            "from src.modules import VisualNovelModule\n"
+            "vn = VisualNovelModule()\n"
+            f"vn.random_dialogue([{events_str}])\n"
+        )
+
+    elif exit_type == "cond":
+        cond = exit_data.get("condition", {})
+        var = cond.get("var", "")
+        op = cond.get("op", "equal")
+        value = cond.get("value", "")
+        tb = branches[0] if len(branches) > 0 else None
+        fb = branches[1] if len(branches) > 1 else None
+
+        # Map op to method
+        method_map = {
+            "equal": "condSame",
+            "not_equal": "condNotSame",
+            "less_than": "condLessThan",
+            "greater_than": "condMoreThan",
+        }
+        method = method_map.get(op, "condSame")
+
+        code = (
+            "from src.modules import VisualNovelModule\n"
+            "vn = VisualNovelModule()\n"
+        )
+        code += f'vn.{method}("{var}", {value}, [\n'
+        if tb and tb.get("target"):
+            code += f'        vn.jumpTo("{tb["target"]}", nested=True)\n'
+        code += "    ])\n"
+        if fb and fb.get("target"):
+            code += f'vn.jumpTo("{fb["target"]}")\n'
+        return code
+
+    else:  # finish
+        return (
+            "from src.modules import VisualNovelModule\n"
+            "vn = VisualNovelModule()\n"
+            "vn.finish()\n"
+        )

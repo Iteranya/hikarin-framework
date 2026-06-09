@@ -118,7 +118,7 @@ export class GameRunner {
      * Internal: Fetches compiled JSON from the server.
      */
     async compileProject() {
-    const url = `/api/projects/${this.projectSlug}/compile_temp/${this.groupSlug}`;
+    const url = `/api/projects/${this.projectSlug}/compile-flow/${this.groupSlug}`;
     
     // We'll wrap the whole thing in a try...catch to be safe, 
     // though the primary error handling is inside.

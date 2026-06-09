@@ -3,28 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MobTalker - Visual Editor</title>
-    
+    <title>Hikarin — Flow Editor</title>
+
     <!-- TAILWIND & ICONS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 
-    <!-- BLOCKLY IMPORTS -->
-    <script src="https://unpkg.com/blockly/blockly_compressed.js"></script>
-    <script src="https://unpkg.com/blockly/blocks_compressed.js"></script>
-    <script src="https://unpkg.com/blockly/msg/en.js"></script>
-    <script src="https://unpkg.com/blockly/python_compressed.js"></script>
+    <!-- MERMAID -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 
+    <!-- VN VIEWER -->
     <script src="https://unpkg.com/hikarin-vn-viewer@latest/dist/hikarin-vn-viewer.umd.js"></script>
+
+    <!-- STYLES -->
+    <link href="/static/hikarin/css/flow_manager.css" rel="stylesheet">
 
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: { 
+                    fontFamily: {
                         sans: ['Inter', 'sans-serif'],
                         mono: ['Fira Code', 'monospace']
                     },
@@ -36,286 +37,144 @@
             }
         }
     </script>
-<style>
-    /* 1. SCROLLBARS */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: #1e1e1e; }
-    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
 
-    /* 2. BLOCKLY MAIN CANVAS */
-    .blocklySvg { 
-        background-color: #121212 !important; 
-        outline: none;
-    }
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #1e1e1e; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
 
-    /* 3. TOOLBOX BACKGROUND (The Fix) */
-    /* Target every possible container name Blockly uses */
-    .blocklyToolboxDiv, 
-    .blocklyToolbox, 
-    .blocklyToolboxContents,
-    .blocklyToolboxDiv.blocklyToolboxDelete { 
-        background-color: #1e1e1e !important; 
-        color: #e5e7eb !important;
-        border-right: 1px solid #2d2d2d;
-    }
+        .editor-tab { transition: all 0.15s; }
+        .editor-tab.active { background-color: #2d2d2d; color: #fff; border-bottom: 2px solid #22c55e; }
+        .editor-tab.play { color: #60a5fa; }
+        .editor-tab.play.active { color: #fff; border-bottom-color: #3b82f6; }
+        .glass-panel { background: rgba(30,30,30,0.95); backdrop-filter: blur(8px); border-left: 1px solid rgba(255,255,255,0.1); }
 
-    /* 4. TEXT COLORS (Categories) */
-    .blocklyTreeLabel { 
-        color: #e5e7eb !important; /* Force Light Gray Text */
-        font-family: 'Inter', sans-serif; 
-        font-size: 13px;
-        font-weight: 500;
-    }
-
-    /* 5. CATEGORY ROW HOVER/ACTIVE */
-    /* When not selected */
-    .blocklyTreeRow {
-        border-left: 4px solid transparent; /* Placeholder for alignment */
-    }
-    
-    /* Hover effect */
-    .blocklyTreeRow:not(.blocklyTreeSelected):hover { 
-        background-color: #2d2d2d !important; 
-    }
-
-    /* Selected Category */
-    .blocklyTreeSelected .blocklyTreeRow { 
-        background-color: #22c55e15 !important; /* Green tint */
-        border-left: 4px solid #22c55e !important; /* Green line */
-    }
-    
-    .blocklyTreeSelected .blocklyTreeLabel { 
-        color: #22c55e !important; /* Green Text */
-        font-weight: 700; 
-    }
-
-    /* 6. FLYOUT (The drawer that opens) */
-    .blocklyFlyoutBackground { 
-        fill: #1e1e1e !important; 
-        fill-opacity: 0.95; 
-    }
-
-    /* 7. UI HELPERS */
-    .nav-link.active { color: #fff; border-bottom: 2px solid #22c55e; background: rgba(255,255,255,0.05); }
-    .editor-tab.active { background-color: #2d2d2d; color: #fff; border-bottom: 2px solid #22c55e; }
-    .glass-panel { background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(8px); border-left: 1px solid rgba(255, 255, 255, 0.1); }
-
-    /* 8. HIDE GHOST SCROLLBARS */
-    .blocklyFlyoutScrollbar {
-        display: none !important;
-        opacity: 0 !important;
-    }
-</style>
+        /* ─── COLLAPSIBLE SIDEBAR ─── */
+        #fileSidebar { width: 240px; min-width: 240px; transition: all 0.25s ease; overflow: hidden; }
+        #fileSidebar.collapsed { width: 0; min-width: 0; opacity: 0; pointer-events: none; }
+    </style>
 </head>
-<body class="bg-dark-900 text-gray-200 font-sans h-screen flex flex-col overflow-hidden selection:bg-mob-500 selection:text-white">
+<body class="bg-dark-900 text-gray-200 font-sans h-screen flex flex-col overflow-hidden">
 
-    <!-- LAYOUT -->
-    <div class="flex flex-1 overflow-hidden relative">
+    <!-- ═══════════════ TOOLBAR ═══════════════ -->
+    <header class="h-10 bg-dark-800 border-b border-gray-800 flex items-center justify-between px-3 flex-shrink-0 select-none">
+                <div class="flex items-center gap-1 h-full">
+            <button id="btn-toggle-sidebar" title="Show files"
+                class="h-8 w-8 flex items-center justify-center text-gray-500 hover:text-white hover:bg-dark-700 rounded transition">
+                <i class="fa-solid fa-folder-tree"></i>
+            </button>
+            <a href="/" title="Projects"
+                class="h-8 w-8 flex items-center justify-center text-gray-500 hover:text-white hover:bg-dark-700 rounded transition">
+                <i class="fa-solid fa-home"></i>
+            </a>
+            <span class="w-px h-5 bg-gray-700 mx-1"></span>
+            <button id="tab-flow" class="editor-tab active h-full px-4 text-xs font-medium flex items-center gap-2">
+                <i class="fa-solid fa-diagram-project"></i> Flow
+            </button>
+            <button id="tab-play" class="editor-tab play h-full px-4 text-xs font-medium text-gray-400 hover:text-white hover:bg-dark-700 flex items-center gap-2">
+                <i class="fa-solid fa-gamepad"></i> Play
+            </button>
+        </div>
 
-        <!-- FILE EXPLORER -->
-        <aside class="w-64 bg-dark-800 border-r border-gray-800 flex flex-col z-30">
-            <div class="flex items-center gap-4 w-64 justify-start" id="save-status-container">
-                <div class="px-3 py-1 bg-dark-800 rounded border border-gray-700 flex items-center gap-2">
-                    <div id="save-status-dot" class="w-2 h-2 rounded-full bg-gray-500"></div>
-                    <span id="save-status-text" class="text-xs text-gray-400">Ready</span>
-                </div>
+        <div id="lbl-current-file" class="text-xs text-gray-500 font-mono hidden md:block truncate mx-4">
+            No file selected
+        </div>
+        <div class="flex items-center gap-3">
+            <button id="btn-player-sidebar" class="hidden text-xs bg-gray-700 hover:bg-blue-600 text-white px-3 py-1 rounded transition flex items-center gap-2">
+                <i class="fa-solid fa-sliders"></i> Tools
+            </button>
+            <div id="save-status-container" class="flex items-center gap-2 px-2 py-1 bg-dark-800 rounded border border-gray-700">
+                <div id="save-status-dot" class="w-2 h-2 rounded-full bg-gray-500"></div>
+                <span id="save-status-text" class="text-xs text-gray-400">Ready</span>
             </div>
-            <div class="p-4 border-b border-gray-800">
-                <p class="text-[10px] uppercase font-bold text-gray-500 mb-1">Active Group</p>
-                <div class="flex items-center justify-between">
-                    <h2 class="text-sm font-bold text-white truncate">Script Files</h2>
-                </div>
+        </div>
+    </header>
+
+    <!-- ═══════════════ MAIN ═══════════════ -->
+    <div class="flex flex-1 overflow-hidden">
+
+        <!-- FILE SIDEBAR -->
+        <aside id="fileSidebar" class="bg-dark-800 border-r border-gray-800 flex flex-col z-20">
+            <div class="p-3 border-b border-gray-800">
+                <p class="text-[10px] uppercase font-bold text-gray-500 mb-1">Group</p>
+                <h2 class="text-sm font-bold text-white truncate">Script Files</h2>
             </div>
-            <!-- DYNAMIC FILE LIST -->
             <div class="flex-1 overflow-y-auto py-2">
                 <div class="px-2" id="fileListContainer">
-                    <!-- Javascript populates this -->
                     <div class="text-xs text-gray-500 text-center mt-4">Loading files...</div>
                 </div>
             </div>
             <div class="p-3 border-t border-gray-800 bg-dark-900/50">
-                <div class="p-3 border-t border-gray-800 bg-dark-900/50">
-    <!-- ADDED: onclick event -->
-                <button onclick="document.getElementById('modal-new-script').classList.remove('hidden'); document.getElementById('modal-new-script').classList.add('flex'); document.getElementById('inp-new-script-name').focus();" 
-                        class="w-full py-1.5 text-xs text-gray-400 hover:text-white border border-gray-700 rounded hover:bg-gray-700 transition">
+                <button id="btn-new-script"
+                    class="w-full py-1.5 text-xs text-mob-500 hover:text-white border border-gray-700 rounded hover:bg-gray-700 transition">
                     <i class="fa-solid fa-plus mr-1"></i> New Script
                 </button>
             </div>
-            </div>
         </aside>
 
-            <main class="flex-1 flex flex-col bg-dark-900 relative min-w-0">
-        <!-- TOOLBAR -->
-            <header class="h-10 bg-dark-800 border-b border-gray-800 flex items-center justify-between px-4 flex-shrink-0 select-none">
-                <div class="flex h-full">
-                    <!-- TAB 1: VISUAL -->
-                    <button onclick="editor.setView('visual')" id="tab-visual" class="editor-tab active h-full px-4 text-xs font-medium flex items-center gap-2 border-r border-gray-800 transition">
-                        <i class="fa-solid fa-puzzle-piece"></i> Visual
-                    </button>
-                    <!-- TAB 2: PLAY (Replaces Source) -->
-                    <button onclick="editor.setView('play')" id="tab-play" class="editor-tab h-full px-4 text-xs font-medium text-gray-400 hover:text-white hover:bg-dark-700 flex items-center gap-2 border-r border-gray-800 transition">
-                        <i class="fa-solid fa-gamepad"></i> Play / Test
-                    </button>
+        <!-- WORKSPACE -->
+        <main class="flex-1 flex flex-col bg-dark-900 min-w-0 relative overflow-hidden">
+            <div id="flowView" class="flex-1 flex"></div>
+            <div id="gamePlayerView" class="hidden flex-1 bg-black flex-col overflow-hidden">
+                <div id="game-loader" class="absolute inset-0 z-50 bg-dark-900/90 flex flex-col items-center justify-center hidden">
+                    <div class="w-8 h-8 border-4 border-mob-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                    <span class="text-xs text-gray-400 font-mono uppercase">Compiling Scene...</span>
                 </div>
-                
-                <div id="lbl-current-file" class="text-xs text-gray-500 font-mono hidden md:block">
-                   No File Selected
+                <div class="w-full h-full flex items-center justify-start pt-12 flex-col">
+                    <div id="vn-container" class="relative w-full max-w-5xl max-h-[65vh] aspect-video shadow-2xl bg-black border border-gray-800 rounded-lg ring-1 ring-white/10"></div>
+                    <div class="mt-4 text-[10px] text-gray-600 uppercase font-mono">Debug & Text Area Below</div>
                 </div>
-                
-                <div class="flex items-center gap-3">
-                    <!-- Button for EDITOR sidebar -->
-                    <button onclick="editor.toggleCodeSidebar()" id="btn-code-sidebar" class="text-xs bg-gray-700 hover:bg-mob-600 text-white px-3 py-1 rounded transition flex items-center gap-2">
-                        <i class="fa-brands fa-python"></i> <span class="hidden sm:inline">Show Code</span>
-                    </button>
-
-                    <!-- ADDED: Button for PLAYER sidebar (initially hidden) -->
-                    <button onclick="editor.togglePlayerSidebar()" id="btn-player-sidebar" class="hidden text-xs bg-gray-700 hover:bg-blue-600 text-white px-3 py-1 rounded transition flex items-center gap-2">
-                        <i class="fa-solid fa-sliders"></i> <span class="hidden sm:inline">Player Tools</span>
-                    </button>
-                </div>
-            </header>
-
-        <!-- WORKSPACE AREA -->
-        <div class="flex-1 relative flex overflow-hidden">
-            
-            <!-- 1. BLOCKLY CANVAS -->
-            <div id="blocklyDiv" class="flex-1 bg-dark-900 z-10 relative"></div>
-
-            <!-- 2. GAME PLAYER -->
-                <div id="gamePlayerView" class="hidden flex-1 bg-black z-10 relative flex-col overflow-hidden">
-                    
-                    <!-- Loader -->
-                    <div id="game-loader" class="absolute inset-0 z-50 bg-dark-900/90 flex flex-col items-center justify-center hidden">
-                        <div class="w-8 h-8 border-4 border-mob-500 border-t-transparent rounded-full animate-spin mb-3"></div>
-                        <span class="text-xs text-gray-400 font-mono tracking-widest uppercase">Compiling Scene...</span>
-                    </div>
-                    <div class="w-full h-full flex items-center justify-start pt-12 flex-col">
-                        <div id="vn-container" class="relative w-full max-w-5xl max-h-[65vh] aspect-video shadow-2xl bg-black border border-gray-800 rounded-lg ring-1 ring-white/10">
-                            <!-- Engine Injects Here -->
-                        </div>
-
-                        <!-- Optional: Label indicating where debug menu goes -->
-                        <div class="mt-4 text-[10px] text-gray-600 uppercase font-mono tracking-widest">
-                            Debug & Text Area Below
-                        </div>
-
-                    </div>
-                </div>
-
-            <!-- 3. PYTHON PREVIEW (Sidebar) -->
-            <div id="pythonSidebar" class="hidden w-96 glass-panel z-20 flex-col border-l border-gray-800 transition-all duration-300">
-                <div class="h-8 bg-dark-950/50 flex items-center justify-between px-3 border-b border-white/5 flex-shrink-0">
-                    <span class="text-[10px] font-bold text-gray-500 uppercase">Generated Python</span>
-                    <button onclick="editor.copyCode()" class="text-gray-500 hover:text-white text-xs" title="Copy to Clipboard">
-                        <i class="fa-regular fa-copy"></i>
-                    </button>
-                </div>
-                <textarea id="generatedCode" readonly class="flex-1 bg-transparent p-4 text-xs font-mono text-blue-100 resize-none outline-none leading-relaxed selection:bg-mob-900"></textarea>
             </div>
 
-            <!-- ADDED: 4. PLAYER SIDEBAR -->
-            <div id="playerSidebar" class="hidden w-72 glass-panel z-20 flex-col border-l border-gray-800 transition-all duration-300">
-                <div class="h-8 bg-dark-950/50 flex items-center justify-between px-3 border-b border-white/5 flex-shrink-0">
+            <!-- PLAYER SIDEBAR -->
+            <div id="playerSidebar" class="hidden absolute right-0 top-0 bottom-0 w-72 glass-panel z-20 flex-col border-l border-gray-800">
+                <div class="h-8 bg-dark-950/50 flex items-center px-3 border-b border-white/5 flex-shrink-0">
                     <span class="text-[10px] font-bold text-gray-500 uppercase">Player Tools</span>
                 </div>
-                
-                <!-- CHANGE THIS DIV BELOW to have id="playerSidebarContent" -->
-                <div id="playerSidebarContent" class="flex-1 flex flex-col h-full overflow-hidden">
-                    <!-- The Javascript will inject the buttons here automatically -->
-                </div>
+                <div id="playerSidebarContent" class="flex-1 flex flex-col h-full overflow-hidden"></div>
             </div>
-
-        </div>
-    </main>
+        </main>
     </div>
 
-    <!-- TOOLBOX XML (Same as before) -->
-    <xml id="toolbox" style="display: none">
-        <category name="Setup" colour="#D35400">
-            <block type="story_setup"></block>
-            <block type="define_character"></block>
-            <block type="vn_scene_setup"></block>
-        </category>
-        <category name="Flow Control" colour="#5C81A6">
-            <block type="vn_label"></block>
-            <block type="vn_jump"></block>
-            <block type="vn_finish"></block>
-            <block type="vn_next"></block>
-        </category>
-        <category name="Dialogue" colour="#5CA65C">
-            <block type="vn_say"></block>
-            <block type="vn_speak"></block>
-            <block type="vn_sound_effect"></block>
-        </category>
-        <category name="Visuals" colour="#A65C81">
-            <block type="vn_show"></block>
-            <block type="vn_remove"></block>
-            <block type="vn_remove_sprite"></block>
-            <block type="vn_show_custom"></block>
-            <block type="vn_show_full"></block>
-        </category>
-        <category name="Logic" colour="#5C5CA6">
-            <block type="vn_choice_menu">
-                <statement name="OPTIONS">
-                    <block type="vn_choice_option">
-                        <field name="TEXT">Yes</field>
-                        <field name="LABEL">lbl_yes</field>
-                        <next>
-                            <block type="vn_choice_option">
-                                <field name="TEXT">No</field>
-                                <field name="LABEL">lbl_no</field>
-                            </block>
-                        </next>
-                    </block>
-                </statement>
-            </block>
-            <block type="vn_choice_option"></block>
-            <block type="vn_set_variable"></block>
-            <block type="vn_modify_variable"></block>
-            <block type="vn_conditional"></block>
-            <block type="vn_conditional_time"></block>
-        </category>
-        <category name="Extras" colour="#808080">
-            <block type="vn_idle_chats"></block>
-            <block type="vn_unlock_dialogue"></block>
-            <block type="vn_game_action"></block>
-        </category>
-    </xml>
-        
-
-        <!-- MODAL: NEW SCRIPT -->
-        <div id="modal-new-script" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 backdrop-blur-sm">
-            <div class="bg-dark-800 rounded-xl p-6 w-96 border border-gray-700 shadow-2xl">
-                <h3 class="text-lg font-bold text-white mb-4">Create New Script</h3>
-                
-                <div class="mb-4">
-                    <label class="block text-xs font-medium text-gray-400 mb-1">Script Name</label>
-                    <input type="text" id="inp-new-script-name" 
-                        class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm text-white focus:border-mob-500 outline-none" 
-                        placeholder="scene_01"
-                        onkeydown="if(event.key === 'Enter') window.fileManager.createNewScript()">
-                    <p class="text-[10px] text-gray-500 mt-1 text-right">
-                        Prefix <span class="font-mono text-mob-500" id="lbl-group-prefix">groupname_</span> will be added.
-                    </p>
-                </div>
-
-                <div class="flex justify-end gap-2">
-                    <button onclick="document.getElementById('modal-new-script').classList.add('hidden'); document.getElementById('modal-new-script').classList.remove('flex');" 
-                            class="px-3 py-1.5 text-gray-400 text-sm hover:text-white transition">
-                        Cancel
-                    </button>
-                    <button onclick="window.fileManager.createNewScript()" 
-                            class="px-3 py-1.5 bg-mob-600 text-white rounded text-sm hover:bg-mob-500 transition font-medium shadow-lg shadow-mob-900/20">
-                        Create
-                    </button>
-                </div>
+    <!-- ═══════════════ MODAL ═══════════════ -->
+    <div id="modal-new-script" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-dark-800 rounded-xl p-6 w-96 border border-gray-700 shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-4">Create New Script</h3>
+            <div class="mb-4">
+                <label class="block text-xs font-medium text-gray-400 mb-1">Script Name</label>
+                <input type="text" id="inp-new-script-name"
+                    class="w-full bg-dark-900 border border-gray-700 rounded p-2 text-sm text-white focus:border-mob-500 outline-none"
+                    placeholder="scene_01"
+                    onkeydown="if(event.key==='Enter')window.fileManager.createNewScript()">
+                <p class="text-[10px] text-gray-500 mt-1 text-right">
+                    Prefix <span class="font-mono text-mob-500" id="lbl-group-prefix">group_</span> will be added.
+                </p>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button onclick="document.getElementById('modal-new-script').classList.add('hidden').classList.remove('flex')"
+                    class="px-3 py-1.5 text-gray-400 text-sm hover:text-white transition">Cancel</button>
+                <button onclick="window.fileManager.createNewScript()"
+                    class="px-3 py-1.5 bg-mob-600 text-white rounded text-sm hover:bg-mob-500 transition font-medium">Create</button>
             </div>
         </div>
-  
+    </div>
 
-    <!-- JS MODULE -->
-     <div id="project-data" style="display: none;" data-slug="" data-group=""></div>
+    <div id="project-data" style="display:none" data-slug="" data-group=""></div>
     <script type="module" src="/static/hikarin/js/main.js"></script>
+
+    <script>
+        (function(){
+            const sidebar = document.getElementById('fileSidebar');
+            const btn = document.getElementById('btn-toggle-sidebar');
+            let visible = localStorage.getItem('hikarin_sidebar') === 'true';
+            if(!visible) sidebar.classList.add('collapsed');
+            btn.addEventListener('click', ()=>{
+                visible=!visible;
+                sidebar.classList.toggle('collapsed',!visible);
+                localStorage.setItem('hikarin_sidebar',visible);
+            });
+        })();
+    </script>
 </body>
 </html>

@@ -1,117 +1,97 @@
 // js/main.js
 
-const Blockly = window.Blockly;
-import { EditorManager } from './editor_manager.js';
+import { FlowEditorManager } from './flow_manager/core.js';
 import { FileManager } from './file_manager.js';
-import { getAllBlockDefinitions, registerGenerators } from './custom_blocks/index.js';
-
-console.log("🚀 DEBUG: Main.js loaded");
+import { GameRunner } from './player/game_runner.js';
+import { PlayerSidebar } from './player/player_sidebar.js';
 
 function getProjectData() {
-    const container = document.getElementById('project-data'); 
-    if (!container) {
-        console.error("⛔ CRITICAL: DOM Element #project-data not found!");
-        return null;
+    const el = document.getElementById('project-data');
+    const slug = el?.dataset?.slug || '';
+    const group = el?.dataset?.group || '';
+
+    // If server-side template didn't populate, extract from URL
+    if (slug && group) return { slug, group };
+
+    // URL: /hikarin/{slug}/{group}
+    const path = window.location.pathname;
+    const parts = path.replace(/^\/+|\/+$/g, '').split('/');
+    // parts = ['hikarin', 'testing', 'test']
+    if (parts.length >= 3 && parts[0] === 'hikarin') {
+        return { slug: parts[1], group: parts[2] };
     }
-    return {
-        slug: container.dataset.slug,
-        group: container.dataset.group
-    };
+
+    console.error('Cannot determine project slug/group from URL or DOM');
+    return null;
 }
 
-// Ensure this matches define_character.js exactly
-function sanitizeVariableName(text) {
-  let clean = text.replace(/[^a-zA-Z0-9_]/g, '_');
-  if (/^[0-9]/.test(clean)) {
-    clean = 'char_' + clean;
-  }
-  return clean.toLowerCase();
-}
 
 async function initializeApp() {
     const data = getProjectData();
     if (!data) return;
 
-    console.log(`🎮 DEBUG: Project: "${data.slug}" | Group: "${data.group}"`);
+    console.log(`🎮 Hikarin: "${data.slug}" / "${data.group}"`);
 
-    // ---------------------------------------------------------
-    // 1. Fetch Characters & Sprites
-    // ---------------------------------------------------------
-    let characterOptions = [];
-    let spriteMap = {};
+    // ─── 1. File Manager ─────────────────────
+    const fileManager = new FileManager(data.slug, data.group);
+    window.fileManager = fileManager;
+    await fileManager.init();
 
-    try {
-        console.log("🔄 Fetching characters...");
-        const charRes = await fetch('/api/library/characters');
-        const characters = await charRes.json();
-        characterOptions = characters.map(char => [char.name, char.id]);
+    // ─── 2. Flow Editor ──────────────────────
+    const flowEditor = new FlowEditorManager(fileManager);
+    window.flowEditor = flowEditor;
 
-        console.log("🔄 Fetching sprite map...");
-        const mapRes = await fetch('/api/library/sprite-map'); 
-        const rawMap = await mapRes.json(); 
+    // Auto-create labels when new script is created
+    fileManager.onFileCreated = async (filename) => {
+        setTimeout(async () => {
+            await flowEditor._ensureAllLabels();
+            await flowEditor.renderAll();
+        }, 600);
+    };
 
-        // Process the map
-        Object.keys(rawMap).forEach(charId => {
-            const varName = sanitizeVariableName(charId);
-            const sprites = rawMap[charId];
-            
-            // Log for debugging
-            console.log(`🔹 Map Entry: ID="${charId}" -> Var="${varName}" | Sprites: ${sprites.length}`);
+    // ─── 3. Game Runner & Player ─────────────
+    const gameRunner = new GameRunner(data.slug, data.group, () => switchTab('flow'));
+    const playerSidebar = new PlayerSidebar(gameRunner);
 
-            if (sprites.length > 0) {
-                spriteMap[varName] = sprites.map(s => [s, s]);
-            } else {
-                // If backend returns empty list, ensure we don't crash but show fallback later
-                spriteMap[varName] = []; 
-            }
-        });
+    // ─── 4. Tab Switching ────────────────────
+    const flowView = document.getElementById('flowView');
+    const gameView = document.getElementById('gamePlayerView');
+    const tabFlow = document.getElementById('tab-flow');
+    const tabPlay = document.getElementById('tab-play');
 
-        console.log("✅ Final Sprite Map Keys:", Object.keys(spriteMap));
-
-    } catch (error) {
-        console.error("⛔ Failed to load library data:", error);
+    function switchTab(tab) {
+        if (tab === 'flow') {
+            tabFlow.classList.add('active');
+            tabPlay.classList.remove('active');
+            flowView.classList.remove('hidden');
+            gameView.classList.add('hidden');
+            playerSidebar.hideButton();
+            playerSidebar.close();              // ← ADD THIS
+            flowEditor.mount();
+        } else {
+            tabPlay.classList.add('active');
+            tabFlow.classList.remove('active');
+            flowView.classList.add('hidden');
+            gameView.classList.remove('hidden');
+            playerSidebar.showButton();
+            flowEditor.unmount();
+        }
     }
 
-    // ---------------------------------------------------------
-    // 2. Define Blocks
-    // ---------------------------------------------------------
-    // IMPORTANT: We pass 'spriteMap' into 'spriteOptions'
-    const allDefinitions = getAllBlockDefinitions({
-        characterOptions: characterOptions,
-        spriteOptions: spriteMap 
-    });
+    tabFlow.addEventListener('click', () => switchTab('flow'));
+    tabPlay.addEventListener('click', () => switchTab('play'));
 
-    Blockly.defineBlocksWithJsonArray(allDefinitions);
-    registerGenerators(Blockly.Python);
+    // ─── 5. Player Sidebar Button ────────────
+    const btnPlayer = document.getElementById('btn-player-sidebar');
+    if (btnPlayer) {
+        btnPlayer.onclick = () => playerSidebar.toggle();
+        btnPlayer.classList.remove('hidden'); // visible in play mode
+    }
 
-    // 3. Inject Workspace
-    const workspace = Blockly.inject('blocklyDiv', {
-        toolbox: document.getElementById('toolbox'),
-        scrollbars: true,
-        grid: { spacing: 20, length: 3, colour: '#2d2d2d', snap: true },
-        zoom: { controls: true, wheel: true, startScale: 1.0 },
-        renderer: 'zelos',
-        sounds: false 
-    });
-
-    // 4. Initialize Managers
-    const editor = new EditorManager(workspace, data.slug, data.group);
-    const fileManager = new FileManager(data.slug, data.group, editor, workspace);
-
-    window.editor = editor;
-    window.fileManager = fileManager;
-
-    // 5. Setup Auto-Save
-    let saveTimeout;
-    workspace.addChangeListener((e) => {
-        if (e.type === Blockly.Events.UI || e.type === Blockly.Events.VIEWPORT_CHANGE) return;
-        
-        editor.generateCode(); 
-        clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(() => fileManager.saveCurrentFile(), 2000); 
-    });
-
-    await fileManager.init();
+    // ─── 6. Mount Flow by default ────────────
+    flowEditor.mount();
+    tabFlow.classList.add('active');
+    playerSidebar.hideButton();
 }
 
 initializeApp();
