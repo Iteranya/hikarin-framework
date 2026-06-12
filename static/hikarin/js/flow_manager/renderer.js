@@ -64,23 +64,23 @@ function generateMermaid(fm, flowData) {
   const nid = (id) => id.replace(/[^a-zA-Z0-9_]/g, '_');
 
   // Node helper – stripped common first word from label
-  const snode = (sceneId) => {
+    const snode = (sceneId) => {
     const id = nid(sceneId);
     if (done.has('s_' + id)) return id;
     done.add('s_' + id);
     const isStart = flowData.startScene === sceneId;
     const exists = fset.has(sceneId);
 
-    // ── Strip the first word (everything before the first underscore)
-    const parts = sceneId.split('_');
-    const label = parts.length > 1 ? parts.slice(1).join(' ') : sceneId.replace(/_/g, ' ');
+    let labelSceneId = sceneId;
+    if (labelSceneId.startsWith('_')) labelSceneId = labelSceneId.slice(1);
+    const parts = labelSceneId.split('_');
+    const label = parts.length > 1 ? parts.slice(1).join(' ') : labelSceneId.replace(/_/g, ' ');
 
     if (!exists) {
       lines.push(`    ${id}[${label} ❌]`);
       lines.push(`    style ${id} fill:#3b1a1a,stroke:#ef4444,color:#fca5a5,stroke-dasharray:4`);
     } else if (isStart) {
       lines.push(`    ${id}{{▶ ${label}}}`);
-      // Keep the original amber style but also add larger font
       lines.push(`    style ${id} fill:#78350f,stroke:#f59e0b,color:#fde68a,font-size:24px`);
     } else {
       lines.push(`    ${id}[${label}]`);
@@ -88,6 +88,7 @@ function generateMermaid(fm, flowData) {
     }
     return id;
   };
+
 
   // Exit node helper (unchanged)
   const cnode = (sceneId, exit) => {
