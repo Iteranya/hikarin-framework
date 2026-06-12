@@ -58,23 +58,23 @@ function generateMermaid(fm, flowData) {
 
   // ── Define a class for scene nodes with larger text ──
   lines.push('    classDef scene-node font-size:24px;');
-  lines.push(''); // blank line for clarity
+  lines.push('');
 
   const done = new Set();
   const nid = (id) => id.replace(/[^a-zA-Z0-9_]/g, '_');
 
-  // Node helper – stripped common first word from label
-    const snode = (sceneId) => {
+  // Node helper with the new label logic
+  const snode = (sceneId) => {
     const id = nid(sceneId);
     if (done.has('s_' + id)) return id;
     done.add('s_' + id);
     const isStart = flowData.startScene === sceneId;
     const exists = fset.has(sceneId);
 
-    let labelSceneId = sceneId;
-    if (labelSceneId.startsWith('_')) labelSceneId = labelSceneId.slice(1);
-    const parts = labelSceneId.split('_');
-    const label = parts.length > 1 ? parts.slice(1).join(' ') : labelSceneId.replace(/_/g, ' ');
+    // ── Strip leading underscores, then hide the first word ──
+    const trimmed = sceneId.replace(/^_+/, ''); // remove leading _
+    const parts = trimmed.split('_');
+    const label = parts.length > 1 ? parts.slice(1).join(' ') : trimmed.replace(/_/g, ' ');
 
     if (!exists) {
       lines.push(`    ${id}[${label} ❌]`);
@@ -88,7 +88,6 @@ function generateMermaid(fm, flowData) {
     }
     return id;
   };
-
 
   // Exit node helper (unchanged)
   const cnode = (sceneId, exit) => {
@@ -120,7 +119,6 @@ function generateMermaid(fm, flowData) {
     } else if (exit.type === 'finish') {
       lines.push(`    ${sId} --> ${cnode(sceneId, exit)}`);
     } else {
-      // choice / cond / random
       const xId = cnode(sceneId, exit);
       lines.push(`    ${sId} --> ${xId}`);
       (exit.branches || []).forEach(b => {
@@ -131,7 +129,7 @@ function generateMermaid(fm, flowData) {
     }
   }
 
-  // 3. Add click handlers to all scene nodes
+  // 3. Add click handlers
   files.forEach(f => {
     const id = nid(f.sceneId);
     if (done.has('s_' + id)) {
