@@ -66,16 +66,29 @@ async function initAce(flowEditor, content, sceneId) {
   });
 
   flowEditor._aceEditor.session.on('change', () => {
-    if (!flowEditor._aceDirty) {
-      flowEditor._aceDirty = true;
-      const el = document.getElementById('flow-code-status');
-      if (el) el.textContent = 'Unsaved changes';
-    }
+    flowEditor._aceDirty = true;
+
+    const el = document.getElementById('flow-code-status');
+    if (el) el.textContent = 'Saving...';
+
+    clearTimeout(flowEditor._aceSaveTimer);
+
+    flowEditor._aceSaveTimer = setTimeout(() => {
+      saveAceFile(flowEditor);
+    }, 750);
   });
 }
 
 export async function saveAceFile(flowEditor) {
-  if (!flowEditor._aceEditor || !flowEditor._aceSceneId) return;
+  if (
+    !flowEditor._aceEditor ||
+    !flowEditor._aceSceneId ||
+    flowEditor._aceSaving
+  ) {
+    return;
+  }
+
+  flowEditor._aceSaving = true;
 
   const content = flowEditor._aceEditor.getValue();
   const slug = flowEditor.fm.projectSlug;
@@ -83,17 +96,19 @@ export async function saveAceFile(flowEditor) {
   const statusEl = document.getElementById('flow-code-status');
 
   try {
-    await fetch(`/api/projects/${slug}/file/${filename}`, {
+    const res = await fetch(`/api/projects/${slug}/file/${filename}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content }),
     });
+
+    if (!res.ok) throw new Error('Save failed');
+
     flowEditor._aceDirty = false;
     if (statusEl) statusEl.textContent = 'Saved ✓';
-    setTimeout(() => {
-      if (statusEl && !flowEditor._aceDirty) statusEl.textContent = 'Ctrl+S to save';
-    }, 2000);
   } catch (e) {
     if (statusEl) statusEl.textContent = 'Save failed!';
+  } finally {
+    flowEditor._aceSaving = false;
   }
 }
