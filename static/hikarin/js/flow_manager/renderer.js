@@ -58,6 +58,7 @@ function generateMermaid(fm, flowData) {
   const done = new Set();
   const nid = (id) => id.replace(/[^a-zA-Z0-9_]/g, '_');
 
+  // Node helper – adds definition line once, returns safe id
   const snode = (sceneId) => {
     const id = nid(sceneId);
     if (done.has('s_' + id)) return id;
@@ -79,6 +80,7 @@ function generateMermaid(fm, flowData) {
     return id;
   };
 
+  // Exit node helper (choice/cond/jump/finish)
   const cnode = (sceneId, exit) => {
     const id = nid(sceneId) + '_x';
     if (done.has('c_' + id)) return id;
@@ -89,39 +91,42 @@ function generateMermaid(fm, flowData) {
     return id;
   };
 
-  const visited = new Set();
-  const walk = (sceneId) => {
-    if (visited.has(sceneId) || !fset.has(sceneId)) return;
-    visited.add(sceneId);
-    const sId = snode(sceneId);
+  // ── 1. Ensure every .py scene has a node ──
+  files.forEach(f => snode(f.sceneId));
+
+  // ── 2. Draw ALL edges for each scene ──
+  for (const f of files) {
+    const sceneId = f.sceneId;
+    const sId = nid(sceneId);
     const exit = flowData.scenes[sceneId]?.exit || { type: 'finish', branches: [] };
 
     if (exit.type === 'jump') {
-      const t = exit.branches[0]?.target;
-      if (t && fset.has(t)) { lines.push(`    ${sId} -->|►| ${snode(t)}`); walk(t); }
-      else { lines.push(`    ${sId} --> ${cnode(sceneId, exit)}`); }
-      return;
-    }
-    if (exit.type === 'finish') { lines.push(`    ${sId} --> ${cnode(sceneId, exit)}`); return; }
-
-    const xId = cnode(sceneId, exit);
-    lines.push(`    ${sId} --> ${xId}`);
-    (exit.branches || []).forEach(b => {
-      if (b.target && fset.has(b.target)) {
-        lines.push(`    ${xId} -->|${b.label || '?'}| ${snode(b.target)}`);
-        walk(b.target);
+      const target = exit.branches[0]?.target;
+      if (target && fset.has(target)) {
+        lines.push(`    ${sId} -->|►| ${nid(target)}`);
+      } else {
+        lines.push(`    ${sId} --> ${cnode(sceneId, exit)}`);
       }
-    });
-  };
+    } else if (exit.type === 'finish') {
+      lines.push(`    ${sId} --> ${cnode(sceneId, exit)}`);
+    } else {
+      // choice / cond / random
+      const xId = cnode(sceneId, exit);
+      lines.push(`    ${sId} --> ${xId}`);
+      (exit.branches || []).forEach(b => {
+        if (b.target && fset.has(b.target)) {
+          lines.push(`    ${xId} -->|${b.label || '?'}| ${nid(b.target)}`);
+        }
+      });
+    }
+  }
 
-  const start = flowData.startScene && fset.has(flowData.startScene)
-    ? flowData.startScene : files[0]?.sceneId;
-  if (start) walk(start);
-  files.forEach(f => { if (!visited.has(f.sceneId)) snode(f.sceneId); });
-
+  // ── 3. Add click handlers to all scene nodes ──
   files.forEach(f => {
     const id = nid(f.sceneId);
-    if (done.has('s_' + id)) lines.push(`    click ${id} call flowHandleClick("${f.sceneId}")`);
+    if (done.has('s_' + id)) {
+      lines.push(`    click ${id} call flowHandleClick("${f.sceneId}")`);
+    }
   });
 
   return lines.join('\n');
