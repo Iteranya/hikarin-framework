@@ -556,3 +556,14 @@
     outline: none;
     border-color: #22c55e;   /* your mob-500 */
 }
+
+#flowView > .w-56 > .p-2 {
+    flex-shrink: 0;
+    border-top: 1px solid #374151; /* already there? Just make sure it’s visible */
+}
+
+#flowView > .w-56 > .flex-1 {
+    overflow-y: auto;
+    min-height: 0;          /* critical: prevents the list from forcing the sidebar to grow */
+    max-height: calc(100vh - 220px); /* adjust to leave room for header + footer + top padding */
+}
