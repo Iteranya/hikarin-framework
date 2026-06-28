@@ -248,6 +248,7 @@ function createFieldElement(key, field, block) {
     input = document.createElement('input');
     input.type = 'text';
     input.placeholder = field.placeholder || '';
+    input.dataset.key = key;
     input.addEventListener('input', (e) => {
       block[key] = e.target.value;
       saveBlocks();
