@@ -1,27 +1,35 @@
-export async function openCodeTab(flowEditor, sceneId) {
+export async function openCodeTab(flowEditor, sceneId, presetContent = null) {
   if (!sceneId) return;
 
+  // Ensure the outer code tab is visible
+  const codeTabOuter = document.getElementById('flow-code-content');
+  if (codeTabOuter) codeTabOuter.style.display = 'flex';
   document.getElementById('flow-editor-content').style.display = 'none';
-  document.getElementById('flow-code-content').style.display = 'flex';
-
-  const titleEl = document.getElementById('flow-editor-title');
-  if (titleEl) titleEl.textContent = 'Code Editor';
+  // Hide form, show ACE container
+  document.getElementById('flow-script-content').classList.add('hidden');
+  const aceContainer = document.getElementById('flow-ace-container');
+  aceContainer.classList.remove('hidden');
+  aceContainer.style.display = 'flex';
 
   const filenameEl = document.getElementById('flow-code-filename');
   if (filenameEl) filenameEl.textContent = `${sceneId}.py`;
 
-  try {
-    const res = await fetch(`/api/projects/${flowEditor.fm.projectSlug}/file/${sceneId}.py`);
-    const data = res.ok ? await res.json() : null;
-    await initAce(flowEditor, data?.content || `# File not found: ${sceneId}.py\n`, sceneId);
-    const statusEl = document.getElementById('flow-code-status');
-    if (statusEl) statusEl.textContent = data ? 'Loaded' : 'File not found';
-  } catch (e) {
-    await initAce(flowEditor, `# Error loading: ${e.message}\n`, sceneId);
-    const statusEl = document.getElementById('flow-code-status');
-    if (statusEl) statusEl.textContent = 'Error';
+  let content;
+  if (presetContent !== null) {
+    content = presetContent;
+  } else {
+    try {
+      const res = await fetch(`/api/projects/${flowEditor.fm.projectSlug}/file/${sceneId}.py`);
+      const data = res.ok ? await res.json() : null;
+      content = data?.content || `# File not found: ${sceneId}.py\n`;
+    } catch (e) {
+      content = `# Error loading: ${e.message}\n`;
+    }
   }
 
+  await initAce(flowEditor, content, sceneId);
+  const statusEl = document.getElementById('flow-code-status');
+  if (statusEl) statusEl.textContent = presetContent ? 'Generated' : 'Loaded';
   flowEditor._aceSceneId = sceneId;
 }
 
@@ -67,12 +75,9 @@ async function initAce(flowEditor, content, sceneId) {
 
   flowEditor._aceEditor.session.on('change', () => {
     flowEditor._aceDirty = true;
-
     const el = document.getElementById('flow-code-status');
     if (el) el.textContent = 'Saving...';
-
     clearTimeout(flowEditor._aceSaveTimer);
-
     flowEditor._aceSaveTimer = setTimeout(() => {
       saveAceFile(flowEditor);
     }, 750);
@@ -80,16 +85,8 @@ async function initAce(flowEditor, content, sceneId) {
 }
 
 export async function saveAceFile(flowEditor) {
-  if (
-    !flowEditor._aceEditor ||
-    !flowEditor._aceSceneId ||
-    flowEditor._aceSaving
-  ) {
-    return;
-  }
-
+  if (!flowEditor._aceEditor || !flowEditor._aceSceneId || flowEditor._aceSaving) return;
   flowEditor._aceSaving = true;
-
   const content = flowEditor._aceEditor.getValue();
   const slug = flowEditor.fm.projectSlug;
   const filename = `${flowEditor._aceSceneId}.py`;
@@ -101,9 +98,7 @@ export async function saveAceFile(flowEditor) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content }),
     });
-
     if (!res.ok) throw new Error('Save failed');
-
     flowEditor._aceDirty = false;
     if (statusEl) statusEl.textContent = 'Saved ✓';
   } catch (e) {

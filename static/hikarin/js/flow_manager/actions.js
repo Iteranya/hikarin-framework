@@ -90,6 +90,8 @@ export function selectScene(flowEditor, sceneId) {
   flowEditor.activeSceneId = sceneId;
   ensure(flowEditor.flowData, sceneId);
   openEditor(flowEditor, sceneId);
+  // 🔁 Always switch to the Flow tab when a scene is selected
+  flowEditor._switchToTab('flow');
 }
 
 export async function deleteFlowConfig(flowEditor, sceneId) {

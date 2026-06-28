@@ -109,7 +109,7 @@ export function openEditor(flowEditor, sceneId) {
 
   flowEditor.activeSceneId = sceneId;
   renderSceneList(flowEditor.fm, flowEditor.flowData, flowEditor.activeSceneId);
-  openFlowTab();
+  flowEditor._switchToTab('flow');
 }
 
 export function closeEditor(flowEditor) {

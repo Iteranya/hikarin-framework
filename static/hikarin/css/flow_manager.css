@@ -480,3 +480,79 @@
 }
 
 
+.form-add-btn {
+    font-size: 0.75rem;        /* 12px */
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    background-color: #2d2d2d;
+    color: #d1d5db;
+    border: 1px solid #374151;
+    transition: all 0.15s;
+    cursor: pointer;
+}
+
+.form-add-btn:hover {
+    background-color: #374151;
+    color: #fff;
+    border-color: #4b5563;
+}
+
+.form-block {
+    background-color: #1e1e1e;
+    border: 1px solid #374151;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+}
+
+.form-block-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.form-block-label {
+    font-size: 0.625rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+.form-block-controls button {
+    color: #6b7280;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.form-block-controls button:hover {
+    color: #fff;
+    background-color: #2d2d2d;
+}
+
+.form-block-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+.form-block-body select,
+.form-block-body input {
+    background-color: #121212;
+    border: 1px solid #374151;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    color: #fff;
+    padding: 0.25rem 0.5rem;
+}
+
+.form-block-body select:focus,
+.form-block-body input:focus {
+    outline: none;
+    border-color: #22c55e;   /* your mob-500 */
+}
