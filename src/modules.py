@@ -254,7 +254,7 @@ class VisualNovelModule:
                 "wFrameRatio":4,
                 "hFrameRatio":8,
                 "column":1,
-                "row":1
+                "row":2
             }
             if(nested==False):
                 self.dialogueDict.append(result)
@@ -280,7 +280,7 @@ class VisualNovelModule:
                 "wFrameRatio":4,
                 "hFrameRatio":8,
                 "column":12,
-                "row":1
+                "row":2
             }
             if(nested==False):
                 self.dialogueDict.append(result)
