@@ -253,7 +253,7 @@ class VisualNovelModule:
                 "hRatio": 9,
                 "wFrameRatio":4,
                 "hFrameRatio":8,
-                "column":3,
+                "column":1,
                 "row":1
             }
             if(nested==False):
@@ -279,7 +279,7 @@ class VisualNovelModule:
                 "hRatio": 9,
                 "wFrameRatio":4,
                 "hFrameRatio":8,
-                "column":10,
+                "column":12,
                 "row":1
             }
             if(nested==False):
